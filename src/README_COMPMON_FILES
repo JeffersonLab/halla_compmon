@@ -1,0 +1,58 @@
+README_COMPMON_FILES
+Description of files used for integrating compton DAQ
+
+mainanal_CompMon.cc
+    (look here first to see program flow)
+    opens input CODA data file and output root file
+    loops on events.
+
+Classes:
+
+textParams
+  reads a text-based parameter file containing run-number dependent parameters
+  will also be used to read CODA readout list parameters dumped into a special
+  user's event at start of a CODA file.  Not CompMon-specific
+  (Replaced hardwired prameters from comptonParams.cc)
+
+helicityTracker
+  deals with helicity status.  Uses the helicityBit input to start predicting
+  future helicity states, etc. Not CompMon specific.
+
+comptonStatus
+   analyzes auxillary data, helicity bit etc. to determine the status of
+   each MPS.  i.e laser state (on/off, left/right)  helicty state (including
+   ability to look ahead when running with delayed trigger0.  BeamOn, etc.
+   Also where we are in a MPS helicity quad and in a laser cycle.
+   Interface to helicityTracker for current helicity state.
+   
+fadcTriggered
+    Handles triggered data with multiple triggers per MPS.
+      This includes fadc data pre-summed (pusle data) and waveform samples.
+      Includes filling of histograms that show MPS events, triggers, etc.
+      sorted by Laser On, Laser Off, helicity,e tc.
+      Also processes Mini-Megan Pulser data.
+
+fadcAccums
+     Handles accumulator data and other MPS-wise data, including quartet-wise histograms.
+
+fadcdata
+     handles unpacking of fadc data.  This Class understands the CODA subbank
+     structures used for the integrating compton  (the accumulator banks,
+      the triggered summed-pulses, and the waveform samples.)
+
+vmeauxdata
+    handles unpacking of auxillary info  from the VME crate, including the scalers.
+
+epcisCompton
+    used for EPICS events to pull out the integrating-daq EPICS info.
+
+Standard Hall A stuff
+THaCodaData, THaCodaFile, THaEpics
+    these Classes understand the basic CODA structure but not the compton-specific
+    information.
+
+Structures
+  bankstructure.h
+     holds info  for a specific CODA subbank  (not compton-specific)
+  pulsestructure.h
+     holds info for an fadc sampled waveform.

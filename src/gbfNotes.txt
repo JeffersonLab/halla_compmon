@@ -1,0 +1,12 @@
+gbfNotes.txt
+3/10/16   Beta:  
+	  comptonstatus  (.h and .cc)
+          Added epics beam position info to root trees
+          zeroed epics event counter at new run
+          set epics_evnum to -1 at run start
+3/11/06   Beta:
+          fadcaccums  (.h and .cc)
+          implemented quartetValid and quartetStable (instead of quadValid)
+          set quartetValid to FALSE if LASER_UNKNOWN is encountered
+          added number of Accum samples to quartetwise tree
+
