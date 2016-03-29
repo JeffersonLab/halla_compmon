@@ -1,18 +1,11 @@
 #
-# Makefile
-#
 #  Makefile for COMPMON
 #   mini version of fadc analysis code for Compton Monitorying
-#  START UPDATE 1/21/2015 gbf  
-
-
-#---------------------------------
-#  Define location by defining one of the symbols below
-LOCATION_JLAB_FRANKLIN = 1
-#LOCATION_CMU=1
-
+#  START UPDATE 1/21/2015 gbf
 #
-#----------------
+#  Makefile configured on:   %%config_date%%
+#  Makefile configured from: %%config_file%%
+#
 
 # -------------------------------------------------------------------------
 #   Sources for all modules
@@ -27,25 +20,12 @@ NAME    = compmon
 # -------------------------------------------------------------------------
 #   These are the standard libraries, include paths and compiler settings
 # -------------------------------------------------------------------------
-ifdef LOCATION_CMU
-BINDIR		= /home/franklin/HallA/newCompton/bin
+BINDIR		= %%config_bindir%%
 LIBS		= $(shell $(ROOTSYS)/bin/root-config --libs)
 GLIBS		= $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11
-#####EVIO_LIB	= libevio.a
-EVIO		= /home/franklin/HallA/newCompton/evio/lib
-EVIO_LIB	= $(EVIO)/libevio.so
-INCLUDES	= -I /home/franklin/HallA/newCompton/evio/include
-endif
-
-ifdef LOCATION_JLAB_FRANKLIN
-BINDIR		= /home/compton/franklin/bin
-LIBS		= $(shell $(ROOTSYS)/bin/root-config --libs)
-GLIBS		= $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11
-
-#####EVIO_LIB	= libevio.a
-EVIO		= /home/compton/evio/Linux-x86_64/lib
-EVIO_LIB	= $(EVIO)/libevio.so
-endif
+EVIO		= %%config_evio_libpath%%
+EVIO_LIB	= $(EVIO)/%%config_evio_lib%%
+INCLUDES	= -I %%config_evio_includepath%%
 
 ALL_LIBS	= $(EVIO_LIB) $(GLIBS) $(ROOTLIBS)
 
