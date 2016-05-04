@@ -48,6 +48,7 @@ helicity_bits=30    ;helicity generating shift register
 
 bitflip_helicity=0
 bitflip_cavpol=1    ;flip definition of cavity polarization bit?
+
 TRANSITION=1600 ;recabled DAQ
 cavity_calibration=329000.0
 ;
@@ -165,6 +166,7 @@ cavity_power_on_min = 800.0
 cavity_power_off_max =200.
 
 ;**************************************************
+
 TRANSITION=2577   ;First 4-pass beam
 cavity_power_pedestal=4000.
 cavity_power_off_max =300.
@@ -174,14 +176,12 @@ TRANSITION=2615
 ; After inserting 1 cm collimator and increases Synch Shield to 6 mm
 ; and moved BCM VTF from IP Scaler chan 0 to chan 14
 chan_ipBCM=14
-
 ped_value=3847.		 ; Calorimeter FADC pedestal
 BCM_calibration=0.00025	  ; Convert scaler counts per clock to Watts
 BCM_pedestal=2.
 cavity_power_pedestal=5750.
 cavity_power_on_min = 800.0
 cavity_power_off_max =200.0
-
 accum_histo_range = 2.0E8 ;raw accumulator histogram max
 accum_histo_diff_max = 4.E7 ;accum helicity difference histomax
 accum_histo_scaled_range = 2.0E8  ;not sure what this is
@@ -189,7 +189,32 @@ accum_histo_scaled_range = 2.0E8  ;not sure what this is
 TRANSITION=2625
 cavity_power_pedestal=6550.
 cavity_power_off_max =500
+
 TRANSITION=2645
 cavity_power_pedestal=5750.  ;Searching for pedestal shift.
+
 TRANSITION=2647
 cavity_power_pedestal=6900.
+
+
+;***************************************************
+
+TRANSITION = 2751    ; First 5-pass beam!
+beam_off_max_BPMSum = -13          ; HAD EFFECT!
+beam_on_min_BPMSum = -12           ; HAD EFFECT!
+;ped_value = 3825                   ; From plotPeaks
+use_BPMSumCuts = 0     ; ==0 for BCM beam cut, ==1 for BPMSum beam cut
+
+; Values from Juan Carlos:
+BCM_calibration = 0.000653864	  ; Units uA/Hz
+BCM_pedestal = 0.341029           ; Units of uA
+cavity_calibration = 0.118 
+cavity_power_pedestal = 182
+cavity_power_off_max = 40
+cavity_power_on_min = 700
+
+ped_value = 3824.06                 ; See Juan Carlos log #15
+TRANSITION = 2752
+ped_value = 3824.24
+TRANSITION = 2753
+ped_value = 3824.48
