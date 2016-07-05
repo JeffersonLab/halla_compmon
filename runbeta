@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# setups input and output links for  CompMon
+# then runs CompMon
+# finds CODA file for a given run by searching list of possible locations
+
+LOCATION=JLAB
+COMPMON_LOCATION=/home/compton/franklin/bin
+compmonVersion=compmonBeta
+runnum="$1"
+if [ $LOCATION="JLAB" ]; then
+    runLocations=(/data/cmu/FadcCalo2015_ \
+	/data/cmu/FadcCalo2016_ \
+	/work/halla/compton/disk1/gregg/FadcCalo2015_ \
+	/home/compton/franklin/data/FadcCalo2015_ )
+    outputlink="rootfiles/beta_"$runnum".root"
+else
+    runLocations=(/home/franklin/hallA/data )
+    outputlink="rootfiles/beta_"$runnum".root"
+fi
+
+###echo ${runLocations[*]}
+foundfile=0
+for i in ${runLocations[*]}; do
+    filename="$i"
+    filename+="$runnum"
+    filename+=".dat"
+    if [ -f $filename ]; then
+	foundfile=1
+	break
+    fi
+done
+if [ foundfile ]; then
+    echo "Found input file: "$filename
+else
+    echo "Error: Input file not found"
+    exit
+fi
+#
+#  Handle parameter 2: event limit
+rm -f lnkCompMon.output
+ln -s $outputlink lnkCompMon.output
+rm -f $outputlink
+rm -f lnkCompMon.input
+ln -s $filename lnkCompMon.input
+$COMPMON_LOCATION/$compmonVersion $runnum $eventlimit

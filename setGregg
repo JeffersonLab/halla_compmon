@@ -1,0 +1,9 @@
+#!/bin/sh
+
+
+# set environment variables
+#
+#  source setGregg
+#
+setenv WORKDISK "/work/halla/compton/disk1/gregg"
+echo $WORKDISK
