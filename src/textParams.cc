@@ -25,25 +25,32 @@ int textParams::getString(char *value, const int maxSize, const char *flag)
 	return rtn;
 }
 
-int textParams::findFlag(const char *flag)
+int textParams::findFlag(const char *flag, int startPos)
 {
 	// looks up flag in parameter input string buffer
 	// rtn= 0  if flag not found
 	// rtn= -1 if flag found, but not followed by "=:
 	// rtn>0  if flag has a value (rtn=index of first charcter of value)
+	// (jc2 11/14/2016): Because some parameters may have similar names
+	// we have to be careful how we check that we find the right one.
 	int rtn;
-	char* pos=strstr(paramBuffer,flag);
+	int len = strlen(flag); // Length of flag
+	char* pos=strstr(&(paramBuffer[startPos]),flag);
 	if(pos==NULL){
 		rtn=0;
 	}else {
-		rtn=-1;     //We've found it, does it also have a value?
-		int indexFlag=pos-paramBuffer;
-		for(int i=indexFlag; i<BUFFER_LEN; i++){
-			if(paramBuffer[i]=='='){
-				rtn=i+1;  //start of Value token
-				break;
+		//We've found something, it should either have a value or be followed by a comma
+		rtn=-1;
+		int indexFlag=pos-paramBuffer+len;
+		if(indexFlag < BUFFER_LEN) {
+			if(paramBuffer[indexFlag]=='=') { // Found the start of Value token
+				rtn = indexFlag+1;
+			} else if (paramBuffer[indexFlag]!=',') {
+				// Okay, that means we found a flag with a similar name 
+				// as this one, but not the one we wanted. Do another
+				// search starting after this position
+				rtn = findFlag(flag,indexFlag);
 			}
-			if(paramBuffer[i]==',') break;
 		}
 	}
 	return rtn;
