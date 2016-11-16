@@ -1,0 +1,6 @@
+#!/bin/bash
+#runroot
+runnum="$1"
+ROOTFILES_LOCATION=/home/compton/franklin/rootfiles
+rootfile="rootfiles/compmon_"$runnum".root"
+root $rootfile

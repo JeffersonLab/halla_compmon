@@ -1,0 +1,43 @@
+#!/bin/bash
+runnum="$1"
+echo "run number "$runnum
+LOCATION=JLAB
+if [ $LOCATION="JLAB" ]; then
+  echo "JLAB Data Locations"
+  inputlink="/data/cmu/FadcCalo2015_"$runnum".dat"
+  echo "Try:"$inputlink
+  if [ ! -f $inputlink ]; then 
+     inputlink="/work/halla/compton/disk1/gregg/FadcCalo2015_"$runnum".dat"
+     if [ ! -f $inputlink  ]; then
+#       inputlink="/work/halla/compton/disk1/gregg/run"$runnum".dat"
+       inputlink="/home/compton/franklin/data/FadcCalo2015_"$runnum".dat"
+       echo "Try:"$inputlink
+       if [ ! -f $inputlink ]; then
+         echo "Run Number "$runnum "Not Found"
+	 exit
+       fi
+     fi
+  fi
+  outputlink="/home/compton/franklin/CompMon/rootfiles/compmon_"$runnum".root"
+else
+  echo "CMU Data Locations"
+   set output = "/home/franklin/HallA/newCompton/CompMon/rootfiles/compmon_"$runnum".root"
+fi
+echo "Input File: "$inputlink
+echo "Output file: " $outputlink
+
+rm -f lnkCompMon.output
+ln -s $outputlink lnkCompMon.output
+rm -f $outputlink
+rm -f lnkCompMon.input
+if [ "$#" -gt 1 ]; then
+    eventlimit="$2"
+    echo "Max events=" $eventlimit
+else
+    eventlimit="-1"
+fi
+echo "Event Lmit: " $eventlimit
+ln -s $inputlink lnkCompMon.input
+
+/home/compton/franklin/bin/compmon $runnum  $eventlimit
+

@@ -33,4 +33,3 @@ rm -f ${rootfile}
 
 ## Finally, run the Hall A On-Line Compton Monitor (TM) :D
 $COMPMON $runnum $numevents
-

@@ -5,30 +5,28 @@
 ;
 ;channel inputs
 channel_calorimeter_PMT=0;
-;Run integrated scaler channels
 chan_runBCM=0
 chan_runClock=3
 chan_runL1A=4
 chan_runMPS=5
 chan_runTriggers=16 ;not used in spring?
-;helicity integration period scaler
-chan_ipBCM=0   ; changd to channel 14 later
-chan_ipClock=1
-chan_ipBPM2Aym=2
+chan_ipBCM=0
+chan_ipClock=2
+chan_ipBPM2Aym=4
+chan_ipBPM2Ayp=1
+chan_ipBPM2Axm=2
 chan_ipBPM2Axp=3
-chan_ipBPM2Axm=4
-chan_ipBPM2Ayp=5
-chan_ipBPM2Bym=6
-chan_ipBPM2Byp=7
-chan_ipBPM2Bxm=0
-chan_ipBPM2Bxp=9
-chan_ipPowLeft=10
-chan_ipPowRight=11
-chan_ipCavPower=12
-chan_ipTriggers=13
+chan_ipBPM2Bym=8
+chan_ipBPM2Byp=9
+chan_ipBPM2Bxm=20
+chan_ipBPM2Bxp=22
+chan_ipPowLeft=5
+chan_ipPowRight=6
+chan_ipCavPower=7
+chan_ipTriggers=12
 chan_ipVFinger=14
 chan_ipHFinger=15
-clockRateIP=2.E7  ;IP Scaler Clock Rate
+
 ped_value=2370
 beam_off_max=2
 beam_on_min=5
@@ -48,7 +46,6 @@ helicity_bits=30    ;helicity generating shift register
 
 bitflip_helicity=0
 bitflip_cavpol=1    ;flip definition of cavity polarization bit?
-
 TRANSITION=1600 ;recabled DAQ
 cavity_calibration=329000.0
 ;
@@ -166,7 +163,6 @@ cavity_power_on_min = 800.0
 cavity_power_off_max =200.
 
 ;**************************************************
-
 TRANSITION=2577   ;First 4-pass beam
 cavity_power_pedestal=4000.
 cavity_power_off_max =300.
@@ -176,12 +172,14 @@ TRANSITION=2615
 ; After inserting 1 cm collimator and increases Synch Shield to 6 mm
 ; and moved BCM VTF from IP Scaler chan 0 to chan 14
 chan_ipBCM=14
+
 ped_value=3847.		 ; Calorimeter FADC pedestal
 BCM_calibration=0.00025	  ; Convert scaler counts per clock to Watts
 BCM_pedestal=2.
 cavity_power_pedestal=5750.
 cavity_power_on_min = 800.0
 cavity_power_off_max =200.0
+
 accum_histo_range = 2.0E8 ;raw accumulator histogram max
 accum_histo_diff_max = 4.E7 ;accum helicity difference histomax
 accum_histo_scaled_range = 2.0E8  ;not sure what this is
@@ -189,46 +187,3 @@ accum_histo_scaled_range = 2.0E8  ;not sure what this is
 TRANSITION=2625
 cavity_power_pedestal=6550.
 cavity_power_off_max =500
-
-TRANSITION=2645
-cavity_power_pedestal=5750.  ;Searching for pedestal shift.
-
-TRANSITION=2647
-cavity_power_pedestal=6900.
-
-<<<<<<< HEAD
-
-;***************************************************
-
-TRANSITION = 2751    ; First 5-pass beam!
-beam_off_max_BPMSum = -13          ; HAD EFFECT!
-beam_on_min_BPMSum = -12           ; HAD EFFECT!
-;ped_value = 3825                   ; From plotPeaks
-use_BPMSumCuts = 0     ; ==0 for BCM beam cut, ==1 for BPMSum beam cut
-
-; Values from Juan Carlos:
-BCM_calibration = 0.000653864	  ; Units uA/Hz
-BCM_pedestal = 0.341029           ; Units of uA
-cavity_calibration = 0.118 
-cavity_power_pedestal = 182
-cavity_power_off_max = 40
-cavity_power_on_min = 700
-ped_value = 3826.06                 ; See Juan Carlos log #15
-;TRANSITION = 2752
-;ped_value = 3824.24
-;TRANSITION = 2753
-;ped_value = 3824.48
-
-TRANSITION = 2800 ; Start of Fall 2016 running (with DAQ tests)
-ped_value = 3847.4539
-
-TRANSITION = 2883 ; Start of Fall 2016 running (with DAQ tests)
-ped_value = 3846.5
-
-TRANSITION = 2921
-cavity_calibration=0.25
-cavity_power_pedestal=250
-cavity_power_off_max = 20
-cavity_power_on_min=1800.0
-beam_on_min = 4;
-beam_off_max = 0.75;
