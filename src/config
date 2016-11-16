@@ -38,7 +38,7 @@ function configVar() {
 }
 configVar bindir ${BINDIR}
 configVar evio_libpath ${EVIO_LIBPATH}
-configVar evio_includepath ${EVIO_LIBPATH}
+configVar evio_includepath ${EVIO_INCLUDEPATH}
 configVar evio_lib ${EVIO_LIB}
 
 ## Last two configurations are the config file used and the current datetime
