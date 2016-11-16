@@ -109,6 +109,12 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("bpmBx_raw", &ip_bpmBx, "bpmBx_raw/F");
   mytree->Branch("bpmBy_raw", &ip_bpmBy, "bpmBy_raw/F");
 
+  // The lab coordinates
+  mytree->Branch("bpmAx", &bpmAx, "bpmAx/F");
+  mytree->Branch("bpmAy", &bpmAy, "bpmAy/F");
+  mytree->Branch("bpmBx", &bpmBx, "bpmBx/F");
+  mytree->Branch("bpmBy", &bpmBy, "bpmBy/F");
+
   mytree->Branch("clockRun", &clockscaler, "clockRun/i");
   mytree->Branch("clockIP", &clockIP, "clockIP/i");
   mytree->Branch("clockdiff", &clock_diff, "clockdiff/I");
@@ -199,6 +205,27 @@ int comptonStatus::newRun(){
   cavityPowerOnMin=theParams->getFloat("cavity_power_on_min");
   cavityPowerOffMax=theParams->getFloat("cavity_power_off_max");
   clockRateIP=theParams->getFloat("clockRateIP");  
+  // BPM parameters
+  BPM2Axm_pedestal=theParams->getFloat("BPM2Axm_pedestal");
+  BPM2Axp_pedestal=theParams->getFloat("BPM2Axp_pedestal");
+  BPM2Aym_pedestal=theParams->getFloat("BPM2Aym_pedestal");
+  BPM2Ayp_pedestal=theParams->getFloat("BPM2Ayp_pedestal");
+  BPM2Bxm_pedestal=theParams->getFloat("BPM2Bxm_pedestal");
+  BPM2Bxp_pedestal=theParams->getFloat("BPM2Bxp_pedestal");
+  BPM2Bym_pedestal=theParams->getFloat("BPM2Bym_pedestal");
+  BPM2Byp_pedestal=theParams->getFloat("BPM2Byp_pedestal");
+  BPM2A_alphax=theParams->getFloat("BPM2A_alphax");
+  BPM2A_alphay=theParams->getFloat("BPM2A_alphay");
+  BPM2B_alphax=theParams->getFloat("BPM2B_alphax");
+  BPM2B_alphay=theParams->getFloat("BPM2B_alphay");
+  BPM2A_xoff=theParams->getFloat("BPM2A_xoff");
+  BPM2A_yoff=theParams->getFloat("BPM2A_yoff");
+  BPM2B_xoff=theParams->getFloat("BPM2B_xoff");
+  BPM2B_yoff=theParams->getFloat("BPM2B_yoff");
+  BPM2A_sensitivity=theParams->getFloat("BPM2A_sensitivity");
+  BPM2B_sensitivity=theParams->getFloat("BPM2B_sensitivity");
+  BPM2A_angle=theParams->getFloat("BPM2A_angle")*0.0174533;
+  BPM2B_angle=theParams->getFloat("BPM2B_angle")*0.0174533;
   //
   countLaserCycles=0;
   subcountMPSLaserCycles=0; //number MPS within current laser mode
@@ -269,34 +296,57 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   bcmscaler =theAuxData->GetGatedBCM();  //bcm value from VTF gated scaler
   rawBCMFloat= bcmscaler;
 
+  float freqConversion = float(clockRateIP)/float(clockIP);
+
   //backup info for beam on/off
   int bpmXP, bpmXM;
   int bpmYP, bpmYM;
-  bpmYM=theAuxData-> GetVtoFBPM2AymIPScaler();
-  bpmYP=theAuxData-> GetVtoFBPM2AypIPScaler();
-  bpmXM=theAuxData-> GetVtoFBPM2AxmIPScaler();
-  bpmXP=theAuxData-> GetVtoFBPM2AxpIPScaler();
-  //ignor pedestal offset and calibration for now
+  bpmYM=theAuxData->GetVtoFBPM2AymIPScaler();
+  bpmYP=theAuxData->GetVtoFBPM2AypIPScaler();
+  bpmXM=theAuxData->GetVtoFBPM2AxmIPScaler();
+  bpmXP=theAuxData->GetVtoFBPM2AxpIPScaler();
+  // quick BPM sum
+  bpmsum=bpmXP+bpmXM+bpmYP+bpmYM;
+  // Determine the rotated BPM values
+  float rot_bpmAx=ComputeBPMPosition(bpmXP,bpmXM,BPM2Axp_pedestal,
+      BPM2Axm_pedestal,BPM2A_alphax, BPM2A_sensitivity,freqConversion);
+  float rot_bpmAy=ComputeBPMPosition(bpmYP,bpmYM,BPM2Ayp_pedestal,
+      BPM2Aym_pedestal,BPM2A_alphay, BPM2A_sensitivity,freqConversion);
+  // For backwards compatibility, also do the "raw" values, with no
+  // calibrations
   if(bpmYM+bpmYP>0){
     ip_bpmAy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmYM+bpmYP>0){
     ip_bpmAx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
-  //BPM sum used as back beam on/off.  normalize by clock and calibration further below
-  bpmsum=bpmXP+bpmXM+bpmYP+bpmYM;
-
+  // Now do the second BPM
   bpmYM=theAuxData-> GetVtoFBPM2BymIPScaler();
   bpmYP=theAuxData-> GetVtoFBPM2BypIPScaler();
   bpmXM=theAuxData-> GetVtoFBPM2BxmIPScaler();
   bpmXP=theAuxData-> GetVtoFBPM2BxpIPScaler();
-  //ignor pedestal offset and calibration for now
+  float rot_bpmBx=ComputeBPMPosition(bpmXP,bpmXM,BPM2Bxp_pedestal,
+      BPM2Bxm_pedestal,BPM2B_alphax, BPM2B_sensitivity,freqConversion);
+  float rot_bpmBy=ComputeBPMPosition(bpmYP,bpmYM,BPM2Byp_pedestal,
+      BPM2Bym_pedestal,BPM2B_alphay, BPM2B_sensitivity,freqConversion);
+  // For backwards compatibility, also do the "raw" values, with no
+  // calibrations
   if(bpmYM+bpmYP>0){
     ip_bpmBy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmXM+bpmXP>0){
     ip_bpmBx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
+  // Now determine the lab frame beam positions
+  float BPM2A_sintheta = sin(BPM2A_angle);
+  float BPM2A_costheta = cos(BPM2A_angle);
+  float BPM2B_sintheta = sin(BPM2B_angle);
+  float BPM2B_costheta = cos(BPM2B_angle);
+  ComputeBPMPositionLab(rot_bpmAx,rot_bpmAy,BPM2A_sintheta,BPM2A_costheta,
+      BPM2A_xoff,BPM2A_yoff,bpmAx,bpmAy);
+  ComputeBPMPositionLab(rot_bpmBx,rot_bpmBy,BPM2B_sintheta,BPM2B_costheta,
+      BPM2B_xoff,BPM2B_yoff,bpmBx,bpmBy);
+
   //assume 40 MHz clock, but this may not be correct for Spring 2016
   rawCavPowFloat=theAuxData->GetCavityPowerScaler();
   if(clockIP<0){
@@ -641,4 +691,21 @@ int comptonStatus::EpicsDebugDump(){
        
       return 0;
 };
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+float comptonStatus::ComputeBPMPosition( float x_pos, float x_neg,
+    float x_pos_ped, float x_neg_ped, float alpha, float sensitivity,
+    float freq_conversion){
+  x_pos *= freq_conversion;
+  x_neg *= freq_conversion;
+  float denom = ((x_pos-x_pos_ped) + alpha*(x_neg-x_neg_ped));
+  if(denom!=0)
+    return sensitivity*((x_pos-x_pos_ped) - alpha*(x_neg-x_neg_ped))/denom;
+  return 1e6;
+}
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+void comptonStatus::ComputeBPMPositionLab(float xrot, float yrot,
+      float sintheta, float costheta, float xoff, float yoff,
+      float &xlab, float &ylab){
+  xlab = xrot*costheta-yrot*sintheta-xoff;
+  ylab = xrot*sintheta+yrot*costheta-yoff;
+}

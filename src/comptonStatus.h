@@ -62,6 +62,10 @@ class comptonStatus {
   float GetEpicsBCMAverage(){ return epics_hacbmf;};
   int GetBeamState(){return beamState;};
   TString DecodeBeamState(int beamState);
+  float ComputeBPMPosition(float x_pos, float x_neg, float x_pos_ped,
+      float x_neg_ped, float alpha, float sensitivity, float freq_conversion);
+  void ComputeBPMPositionLab(float rotX, float rotY, float sintheta,
+      float costheta, float xoff, float yoff, float &xlab, float &ylab);
 
   //helicity stuff
   int GetHelicityState();  //returns -1 if unknown, otherwise 0 or 1 
@@ -111,6 +115,27 @@ class comptonStatus {
   float BCMPedestal;
   float BPMSumCalibration;
   float BPMSumPedestal;
+  // BPM calibrations and the like
+  float BPM2Axm_pedestal;
+  float BPM2Axp_pedestal;
+  float BPM2Aym_pedestal;
+  float BPM2Ayp_pedestal;
+  float BPM2Bxm_pedestal;
+  float BPM2Bxp_pedestal;
+  float BPM2Bym_pedestal;
+  float BPM2Byp_pedestal;
+  float BPM2A_alphax;
+  float BPM2A_alphay;
+  float BPM2B_alphax;
+  float BPM2B_alphay;
+  float BPM2A_xoff;
+  float BPM2A_yoff;
+  float BPM2B_xoff;
+  float BPM2B_yoff;
+  float BPM2A_sensitivity;
+  float BPM2B_sensitivity;
+  float BPM2A_angle;
+  float BPM2B_angle;
   //
   int useBPMSumCuts;  //==1 to use sumed BPMs instead of BCM for beam state
   float BPMSum_OnMin;
@@ -172,6 +197,10 @@ class comptonStatus {
   float ip_bpmAy;
   float ip_bpmBx;
   float ip_bpmBy;
+  float bpmAx;
+  float bpmAy;
+  float bpmBx;
+  float bpmBy;
 
   //Accumulator Info
   int ithr_near;
