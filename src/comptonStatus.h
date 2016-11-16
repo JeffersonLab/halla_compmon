@@ -89,6 +89,7 @@ class comptonStatus {
   textParams* theParams;
   int runnum;
   int countMPS;      
+  int countMPSsinceEPICS;
 
   int countEpics; //count number of EPICS events encoutnered
   

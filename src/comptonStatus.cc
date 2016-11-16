@@ -91,6 +91,7 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("mpsSignal", &mpsSignal, "mpsSignal/I"); //mps signal state
   mytree->Branch("mpsScaler", &mpsScaler, "mpsScaler/I");  //scaler mps read
   mytree->Branch("mpsAnalyzed", &countMPS, "mpsAnalyzed/I"); //mps counter
+  mytree->Branch("mpsSinceEpics",&countMPSsinceEPICS,"mpsSinceEpics/I");
   mytree->Branch("countEpics", &countEpics, "countEpics/I");
   mytree->Branch("countLaserCycles", &countLaserCycles, "countLaserCycles/i");
 
@@ -171,6 +172,7 @@ int comptonStatus::newRun(){
   //Init all counters and status
   countMPS=0;
   countEpics=0;
+  countMPSsinceEPICS=-1;  //not EPICS event yet encountered
   epics_evnum=-1;  //receives EPICS event number (not valid till first EPICS event)
   SetEpicsDefaults();  //erase old EPICS values
   //helicity pattern decoding info
@@ -218,8 +220,9 @@ int comptonStatus::newRun(){
 }
 bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdata* theAuxData){
   countMPS++;   //mps count via count of analyzed Event 1s
+  if(countMPSsinceEPICS>=0) countMPSsinceEPICS++;
   mpsCoda=codaEventNumber;  //mps count via CODA Event 1 header
-
+  
   mpsScaler=theAuxData->GetMPSScaler();  //mps count via VME scaler
   mpsSignal=theAuxData->GetMPSSignal();
   numTriggers=theFADCdata->GetSumsNumberTriggers(0); //number of calorimeter triggers
@@ -543,7 +546,19 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
       TString spol;
       int evtype = codadata[1]>>16;
       int evnum = codadata[4];
+      /*      printf("DEBUG UnpackEpics evntype=%d, evnum=%d\n",evtype,evnum);
+      for (int i=0; i<20; i++){
+	printf("%2d %10u 0x%08x  ",i,codadata[i],codadata[i]);
+	uint32_t tmp=codadata[i];
+	for (int j=0; j<4; j++){
+	  printf(" %c ",tmp&0xFF);
+	  tmp=tmp>>8;
+	}
+	printf("\n");
+      }
+      */
       countEpics++;
+      countMPSsinceEPICS=0;  //counter for MPS events since last EPICS event
       //  cout << "\nEvent #" << evnum << ": event type is " << evtype;
       if (evtype == 131)		// EPICS event
       {
@@ -613,6 +628,8 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 }
 int comptonStatus::EpicsDebugDump(){
       cout << "\n----------EPICS DATA DUMP-----------";
+      cout <<"\nEpics Event Number: "<<epics_evnum;
+      cout <<"\nEpics Counter "<<countEpics;
       cout << "\nCavity power: " << epics_cavpow;
       cout << "\nCavity polarization direction: " << epics_cavpoldir;
       cout << "\nCavity polarization percentage: " << epics_cavpolpercent;
