@@ -14,6 +14,8 @@ using namespace std;
 #include "fadcdata.h"
 #define MAX_SAMPLES 100000//changed from 100000
 fadcdata::fadcdata(){
+  crlVersion = 1;
+  newWaveformReadout = 0;
   for(int chan=0; chan<MAX_FADC_CHANNELS; chan++){
     RawSamples[chan]=NULL;
     UserBits[chan]=NULL;
@@ -21,7 +23,8 @@ fadcdata::fadcdata(){
   return;
 
 }
-fadcdata::fadcdata(textParams* theParamsIn){
+fadcdata::fadcdata(textParams* theParamsIn) : crlVersion(1),
+ newWaveformReadout(0){
   theParams=theParamsIn;
   for(int chan=0; chan<MAX_FADC_CHANNELS; chan++){
     RawSamples[chan]=NULL;
@@ -272,12 +275,115 @@ int fadcdata::UnpackAccumulators(bankstructure bank) {
     return -1;
   }
 }
+
 int fadcdata::UnpackSums(bankstructure bank, int verbose=0, int abortOnError=0) {
+  if(crlVersion <3 || !newWaveformReadout )
+    return UnpackSumsV1(bank,verbose,abortOnError);
+
+  return UnpackSumsV3(bank,verbose,abortOnError);
+}
+
+int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0) {
+  // (10/01/2016 jc2): Starting with CRL version 3, we can also pack the
+  // data into 3 words, which contain a pre, sum, and post summ of the trigger.
+  // Pre can be used as a pedestal measurement, for example.
+  // unpack fadc triggered data that has already been summed into a single
+  // word per trigger during readout of fadc  (bank 0x213)
+  // If verbose>0,   dump info
+  // If abortOnError>0, unpack even if data is flagged with a timing error
+  //
+  //
+  uint32_t* data;
+  data=bank.Data;
+  Sums_InputRegister=data[0];  //first word makes sure fadc was not busy, make sure MPS bit is on
+  int mpscheck = (Sums_InputRegister & 0x80)>>7;
+  int chanStart=0;   //channel number, set to zero for now
+  int NumTriggers=data[1];
+  int NumTriggersSummed=data[2];
+  int NumRandomsSummed=data[3];
+  int NumPreSamples=data[4];
+  int NumSamples=data[5];
+  int NumPostSamples=data[6];
+  Sums_NumberFADCChannels=(data[7]&0xFFFF);
+  Sums_PulserIndex= (data[7]>>16);
+  int chanEnd=chanStart+Sums_NumberFADCChannels-1;
+  //double PedCorrection[MAX_FADC_CHANNELS];
+
+  if(verbose>0){
+    printf(" subbank 0x213 dump (summed pulses)\n");
+    printf("  InputRegister      0x%x\n", Sums_InputRegister);
+    printf("  NumTriggers        %8d\n",NumTriggers);
+    printf("  NumTriggersSummed  %8d\n", NumTriggersSummed);
+    printf("  NumRandomsSummed   %8d\n", NumRandomsSummed);
+    printf("  NumPreSamples      %8d\n", NumPreSamples);
+    printf("  NumSamples         %8d\n", NumSamples);
+    printf("  NumPostSamples     %8d\n", NumPostSamples);
+    //printf("  CODA Pedestal      %8d\n", PedestalSubtracted);
+    printf("  NumberADCChannels  %8d\n", Sums_NumberFADCChannels);
+    printf("  PulserSettingIndex %8d\n", Sums_PulserIndex);
+  }
+  if(mpscheck ==1 || abortOnError>0){
+    if(chanStart>=0 && chanEnd<MAX_FADC_CHANNELS){
+      for(int chan=chanStart; chan<=chanEnd; chan++){
+        Sums_NumberFADCTriggers[chan]=NumTriggers;
+        Sums_NumberTriggersSummed[chan]=NumTriggersSummed;
+        Sums_NumberRandomsSummed[chan]=NumRandomsSummed;
+        Sums_NumberPreSamplesSummed[chan]=NumPreSamples;
+        Sums_NumberSamplesSummed[chan]=NumSamples;
+        Sums_NumberPostSamplesSummed[chan]=NumPostSamples;
+        //take out DAQ nominal Pedestal subtraction and put in actual correction
+	//comment out Pedcorrection stuff (move to fadcTriggeredclass
+        //PedCorrection[chan]=PedValue[chan]*NumSamples-PedestalSubtracted;
+        SumsValid[chan]=true;
+      }
+      int pointer=8;  //first data word for firsttrigger
+      for(int trig=0; trig<NumTriggersSummed; trig++){
+        Sums_Clock[trig]=(data[pointer]&0xFFFFFFF);
+        Sums_PulserSynch[trig]= ((data[pointer++]&0xF0000000)!=0);
+        for(int chan=chanStart; chan<=chanEnd; chan++){
+	  //          SumsData[chan][trig]=data[pointer++]+PedCorrection[chan];
+    	  Sums_PreData[chan][trig]=data[pointer++];
+    	  Sums_Data[chan][trig]=data[pointer++];
+    	  Sums_PostData[chan][trig]=data[pointer++];
+        }
+      }
+      mpsPedestal = 0;
+      for(int trig=0; trig<NumRandomsSummed; trig++){
+        //Sums_RandomClock[trig]=(data[pointer]&0xFFFFFFF);
+        //Sums_RandomPulserSynch[trig]= ((data[pointer++]&0xF0000000)!=0);
+        for(int chan=chanStart; chan<=chanEnd; chan++){
+          //          SumsData[chan][trig]=data[pointer++]+PedCorrection[chan];
+          Sums_RandomPreData[chan][trig]=data[pointer++];
+          Sums_RandomData[chan][trig]=data[pointer++];
+          Sums_RandomPostData[chan][trig]=data[pointer++];
+          //if(Sums_RandomClock[trig] < 6.6e6) {
+            mpsPedestal += (Sums_RandomPreData[chan][trig] +
+              Sums_RandomData[chan][trig] +
+              Sums_RandomPostData[chan][trig]) /
+                (NumPreSamples+NumSamples+NumPostSamples);
+          //}
+        }
+      }
+      mpsPedestal /= NumRandomsSummed;//*
+
+    }
+  } 
+  if(mpscheck !=1){
+    printf("Error: fadcdata::Unpacksums:");
+    printf("fadc readout took too long!  MPS has ended!\n");
+  }
+  return 0;
+
+}
+
+
+int fadcdata::UnpackSumsV1(bankstructure bank, int verbose=0, int abortOnError=0) {
   //
   // unpack fadc triggered data that has already been summed into a single
   // word per trigger during readout of fadc  (bank 0x213)
   // If verbose>0,   dump info
   // If abortOnError>0, unpack even if data is flagged with a timing error
+  //
   //
   uint32_t* data;
   data=bank.Data;

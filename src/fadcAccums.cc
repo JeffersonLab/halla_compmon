@@ -56,7 +56,7 @@ int fadcAccums::DefineHistos() {
   TDirectory *quartetHistos=topdir->mkdir("quartetHistos");
   TDirectory *laserCycleHistos=topdir->mkdir("laserCycleHistos");
   mpsHistos->cd();
-  //
+  
   // Bookkeeping histos
   hM_BCM=new TH1F("hM_BCM","BCM per MPS",1700.,-20.,150.);
   hM_BCM_BeamOn=new TH1F("hM_BCM_BeamOn",
@@ -106,13 +106,13 @@ int fadcAccums::DefineHistos() {
   hM_numSums=new TH1F("hM_numSums","Number Summed FADC Triggers in MPS (Beam On)",
 			   100,0,100);
 
-  //
+  
   //Accumulator Histoes
   // catch all acc0 zero histogram
   hM_acc0_everything=new TH1F("hM_acc0_everything",
 			      "Accum 0 wide all conditions",
 			      500,-100.*accumFullScale,100.*accumFullScale);
-  //
+  
   // Beam Off Histos
   hM_acc0_beamOff_LaserOn=new TH1F("hM_acc0_beamOff_LaserOn","Accum 0 Beam Off Laser On",
 			   25000,-accumFullScale,accumFullScale);
@@ -143,8 +143,9 @@ int fadcAccums::DefineHistos() {
     hM_acc_laserOff[accum]=new TH1F(label,title,
 				    25000,sumMin,sumMax);
   }
-  //quartet  histos
-  //Acc 0 Beam-off histos
+
+  // quartet histos
+  // Acc 0 Beam-off histos
   quartetHistos->cd();
   hQ_aligned0_beamOff=new TH1F("hQ_aligned0_beamOff",
 			       "Acc0 Quad Spin Aligned Beam Off",
@@ -195,39 +196,39 @@ int fadcAccums::DefineHistos() {
   hQ_Asym0=new TH1F("hQ_Asym0","Acc0 Asym (background subtracted)",
 		    1000,-0.3,0.3);
 
-  //accumulator 4
+  // Accumulator 4:
   float diffMax4=0.2*diffMax;
   float sumMin4=0.01*sumMin;
   float sumMax4=0.01*sumMax;
   hQ_sum4_beamOff=new TH1F("hQ_sum4_beamOff","Acc4 Quad Sum laser left",
-			   1000,sumMin4,sumMax4);
+		       1000,sumMin4,sumMax4);
   hQ_diff4_beamOff=new TH1F("hQ_diff4_beamOff","Acc4 Quad Diff laser Left",
-			    1000,-diffMax4,diffMax4);
+		       1000,-diffMax4,diffMax4);
   hQ_sum4_laserLeft=new TH1F("hQ_sum4_laserLeft","Acc4 Quad Sum laser left",
-			     1000,sumMin4,sumMax4);
+		       1000,sumMin4,7E6);
   hQ_sum4_laserOff=new TH1F("hQ_sum4_laserOff","Acc4 Quad Sum laser Off",
 		       1000,sumMin4,sumMax4);
   hQ_diff4_laserLeft=new TH1F("hQ_diff4_laserLeft","Acc4 Quad Diff laser Left",
 		       1000,-diffMax4,diffMax4);
   hQ_diff4_laserOff=new TH1F("hQ_diff4_laserOff","Acc4 Quad Diff Laser Off",
-			     1000, -diffMax4,diffMax4);
+		       1000, -diffMax4,diffMax4);
   hQ_Asym4_raw_laserLeft=new TH1F("hQ_Asym4_raw_laserLeft",
 				     "Acc4 Raw Asym Laser Left",
-				   1000,-0.5,0.5);
+		       1000,-0.5,0.5);
   hQ_Asym4_raw_laserOff=new TH1F("hQ_Asym4_raw_laserOff",
 				    "Acc4 Raw Asym Laser Off",
-				   1000,-0.5,0.5);
+		       1000,-0.5,0.5);
   hQ_Signal4=new TH1F("hQ_Signal4","Acc4 Background Subtracted",
-		      1000,sumMin,sumMax);
+		       1000,sumMin,sumMax);
   hQ_Asym4=new TH1F("hQ_Asym4","Acc4 Asym (background subtracted)",
-				   1000,-0.5,0.5);
-  //beam
+		       1000,-0.5,0.5);
+  // beam
   hQ_BCM_laserOff_P=new TH1F("hQ_BCM_laserOff_P",
 			    "Beam Charge Positive Hel. LaserOff",
-			    6000,-10.,50.);
+		       6000,-10.,50.);
   hQ_BCM_laserOff_N=new TH1F("hQ_BCM_laserOff_N",
 			    "Beam Charge Negative Hel. Laser Off",
-			    6000,-10.,50.);
+		       6000,-10.,50.);
 
   hQ_BCM_laserOn_P=new TH1F("hQ_BCM_laserOn_P","Beam Charge Positive Hel. Laser On",
 			     6000,-10.,50.);
@@ -254,15 +255,15 @@ int fadcAccums::DefineHistos() {
 
   hL_Asym0_raw_laserLeft=new TH1F("hL_Asym0_raw_laserLeft",
 				     "Acc0 LaserPeriod Raw Asym Laser Left",
-				   1000,-0.1,0.1);
+			     1000,-0.1,0.1);
   hL_Asym0_raw_laserOff=new TH1F("hL_Asym0_raw_laserOff",
 				     "Acc0 LaserPeriod Raw Asym Laser Off",
-				   1000,-0.1,0.1);
-  //
+			     1000,-0.1,0.1);
+  
   //Strip Chart style
   mpsHistos->cd();
   hS_Asym0_raw=new TH2F("hS_Asym0_raw","Acc 0 Quad Asym vs MPS",
-			1000,0,40000,500,-.1,.1);
+			     1000,0,40000,500,-.1,.1);
   topdir->cd();
   return 0;
 }
@@ -295,6 +296,8 @@ int fadcAccums::DefineTree(){
   mpsWiseTree->Branch("Acc5",&accsig[5]);
   mpsWiseTree->Branch("Acc6",&accsig[6]);
   mpsWiseTree->Branch("Acc7",&accsig[7]);
+  mpsWiseTree->Branch("NAcc0",&naccsig[0]);
+  mpsWiseTree->Branch("NAcc4",&naccsig[4]);
 
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(mpsWiseTree);
@@ -410,9 +413,12 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
     
     int64_t IntegratedPed;
     double ped=ped_value;  //from textParams class
+    // get pedestal from random triggers
+    //ped = theFADCdata->GetMPSPedestal();
     for(int accum=0; accum<8; accum++){
       IntegratedPed =ped*nacc[accum];
       accsig[accum]=IntegratedPed -accraw[accum];
+      naccsig[accum]=nacc[accum];
     }
 
     float tmp;
@@ -642,9 +648,9 @@ int fadcAccums::BuildQuad(){
     }
   }
 
-  //Beam Off Accumulator Histograms
-  if(3==subquad && quartetValid &&quartetStable  && beamState==BEAM_OFF) {
-    //Accumulator 0 histograms
+  // Beam Off Accumulator Histograms
+  if(3==subquad && quartetValid && quartetStable && beamState==BEAM_OFF) {
+    // Accumulator 0 histograms
     if(laserState==LASER_LEFT || laserState==LASER_LEFTOFF){
       hQ_aligned0_beamOff->Fill(accPosQuad[0]);
       hQ_anti0_beamOff->Fill(accNegQuad[0]);

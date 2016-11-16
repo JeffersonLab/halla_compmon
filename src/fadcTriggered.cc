@@ -105,6 +105,9 @@ int fadcTriggered::DefineTriggeredTree(){
   // data output to tree for each Compton trigger (summed pulses)
   triggerWiseTree=new TTree("triggerwise","Pulse-wise triggered data");
   triggerWiseTree->Branch("sum",&sumVal,0);
+  triggerWiseTree->Branch("sumClock",&sumClock,0);
+  triggerWiseTree->Branch("sumPedestal",&sumPedestal,0);
+  triggerWiseTree->Branch("sumIsRandom",&sumIsRandom,0);
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(triggerWiseTree);
   //
@@ -112,6 +115,7 @@ int fadcTriggered::DefineTriggeredTree(){
   snapshotsTree=new TTree("snapshots","sampled snapshops");
   snapshotsTree->Branch("randomTime",&randomTime,"randomTime/I");
   snapshotsTree->Branch("numSamples",&NumSamples,"numSamples/I");
+  snapshotsTree->Branch("snapClock",&snapshotClock,"snapClock/I");
   snapshotsTree->Branch("snap",&snapshot,"snapshot[numSamples]/F");
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(snapshotsTree);
@@ -147,10 +151,36 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
   // histogram triggered data (pre-summed by CODA )
   int chan=channel_calorimeter_PMT;  
   if(theFADCdata->IsSumsValid(chan)){
-    int originalPedCorr=theFADCdata->GetSumsPedestalSubtracted(chan);
-    int numInSum=theFADCdata->GetNumberSamplesSummed(chan);
-    double PedCorrection=numInSum*ped_value - originalPedCorr;
+    /* 10/01/2016 jc2: For Fall running, we take some channels right
+     * before the pulse and use them to determine the pedestal. Use
+     * that for this pedestal correction.
+     */
     int numTriggersAccepted=theFADCdata->GetSumsNumberTriggersSummed(chan);
+    int numInSum=theFADCdata->GetNumberSamplesSummed(chan);
+    //Float_t PedCorrection = 0;
+    sumPedestal = 0;
+    int numInPedSum = 0;
+
+    int crlVersion = theFADCdata->GetCRLVersion();
+    int enableNewWaveformReadout = theFADCdata->GetWaveformReadoutVersion();
+    bool calculatePed = (crlVersion>=3 && enableNewWaveformReadout);
+    /* (jc2) Early versions of the CRL (before version 3) corrected the
+     * pedestal on-the-fly (meaning, it's in the CODA file). We want to undo
+     * this for those versions. So the sign is positive in this case.
+     * For CRL versions >= 3 the sign should be negative. */
+    int sumSign = 1;
+    //
+    if(calculatePed) {
+      numInPedSum = theFADCdata->GetNumberPreSamplesSummed(chan);
+      sumSign = -1;
+    } else {
+      // We want to undo the pedestal correction that was done by the
+      // old CRL. Instead, we want to use the one supplied in the
+      // compmon.params file.
+      sumPedestal = numInSum*ped_value -
+        theFADCdata->GetSumsPedestalSubtracted(chan);
+    }
+
     //int numTriggers=theVMEauxdata->GetTriggerScaler();
     mpsCount=theStatus->GetCountMPS();
     helicityState=theStatus->GetHelicityState();
@@ -163,22 +193,29 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
     bool laserOff= (laserState==LASER_RIGHTOFF||laserState==LASER_LEFTOFF);
 
     //following sorted fills are only for BEAM ON condiation
+    // (note jc2 11/03/2016: Removed this beam on requirement)
     if(beamOn){
       if(laserOn){
-	mpsLaserOnCount++;
-	bcmLaserOnSum+=bcm;
+        mpsLaserOnCount++;
+        bcmLaserOnSum+=bcm;
       }else if (laserOff){
-	mpsLaserOffCount++;
-	bcmLaserOffSum+=bcm;
+        mpsLaserOffCount++;
+        bcmLaserOffSum+=bcm;
       }
       hTrig_numSums->Fill(numTriggersAccepted);
       for(int i=0; i<numTriggersAccepted; i++){
-	sumVal=theFADCdata->GetSums(chan,i)+PedCorrection;  //move to roottree slot
-	hTrig_sums_All->Fill(sumVal);
-	if(laserOn) hTrig_sums_laserOn->Fill(sumVal);
-	if(laserOff) hTrig_sums_laserOff->Fill(sumVal);
-	if(sort>=0 && sort<4)  hTrig_sums[sort]->Fill(sumVal);
-	triggerWiseTree->Fill();
+        if(calculatePed) {
+          sumPedestal = numInSum*
+            (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
+        }
+        sumVal = sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;  //move to roottree slot
+        hTrig_sums_All->Fill(sumVal);
+        if(laserOn) hTrig_sums_laserOn->Fill(sumVal);
+        if(laserOff) hTrig_sums_laserOff->Fill(sumVal);
+        if(sort>=0 && sort<4)  hTrig_sums[sort]->Fill(sumVal);
+        triggerWiseTree->Fill();
+      }
+      for(int i=0; i<numTriggersAccepted; i++){
       }
     }
     // sort pulses for pulserWiseTree if MiniMegan pulser running
@@ -233,8 +270,12 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
 	//output good sets to Tree (ignore first mps data)
 	indexPulser=0;
 	for(int i=synchIndex; i<numTriggersAccepted-1; i++){
+    if(calculatePed) {
+      sumPedestal = numInSum*
+        (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
+    }
 	  MMpulse[indexPulser ]=
-	    theFADCdata->GetSums(chan,i)+PedCorrection;
+	    sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;
 	  if(indexPulser==3 &&mpsCount>0){
 	    pulserWiseTree->Fill();
 	  }
@@ -325,6 +366,7 @@ int fadcTriggered::DoSampledWaveforms(fadcdata *theFADCdata){
     for(int event=0; event<NumEvents; event++){
       Pulse=theFADCdata->GetPulse(chan,event);
       bits=Pulse.UserBits;
+      snapshotClock=Pulse.Clock;  //3/14/2016  gbf
       data=Pulse.Data;
       for(int i=0; i<NumSamples; i++){
  	snapshot[i]=data[i];
