@@ -1,0 +1,36 @@
+#!/bin/bash
+
+## Require a run number
+if [ "x$1" == "x" ];
+then
+  echo "Must specify run number"
+  exit;
+fi
+
+runnum=$1
+numevents=$2 # Number of events optional (may be empty)
+
+## Specify the compton mononitor executable
+COMPMON=/home/compton/online/CompMon/bin/compmon
+
+## Specify location of data files
+fileprefix=FadcCalo2016_${runnum}
+#datafile=/lustre/expphy/work/halla/compton/cornejo/data/${fileprefix}.dat
+#rootfile=/lustre/expphy/work/halla/compton/cornejo/rootfiles/${fileprefix}.root
+datafile=/data/cmu/${fileprefix}.dat
+rootfile=/data/cmuwork/rootfiles/Fall2016/compmon_${runnum}.root
+
+## Reset link to input data file
+rm -f lnkCompMon.input
+ln -s ${datafile} lnkCompMon.input
+## Reset link to output root file
+rm -f lnkCompMon.output
+ln -s ${rootfile} lnkCompMon.output
+## Also remove the rootfile if it exists, otherwise it breaks things as
+## the CompMon code tries to remove the file, but only removes the link
+## before creating the rootfile again as lnkCompMon.output
+rm -f ${rootfile}
+
+## Finally, run the Hall A On-Line Compton Monitor (TM) :D
+$COMPMON $runnum $numevents
+
