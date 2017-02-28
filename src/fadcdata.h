@@ -32,6 +32,9 @@ class fadcdata {
     int SamplesPerEvent[MAX_FADC_CHANNELS];
     int samplepointer[MAX_FADC_CHANNELS];
     int  UnpackedClock[MAX_FADC_CHANNELS][MAX_FADC_EVENTS];
+    double mpsTriggerPedestal;
+    double mpsRandomPedestal;
+    double mpsPedestal;
     //
     // stuff from  "sums" subbank
     int Sums_InputRegister;
@@ -39,11 +42,22 @@ class fadcdata {
     int Sums_PulserIndex;
     int Sums_NumberFADCTriggers[MAX_FADC_CHANNELS];
     int Sums_NumberTriggersSummed[MAX_FADC_CHANNELS];
+    int Sums_NumberRandomsSummed[MAX_FADC_CHANNELS];
+    int Sums_NumberPreSamplesSummed[MAX_FADC_CHANNELS];
     int Sums_NumberSamplesSummed[MAX_FADC_CHANNELS];
+    int Sums_NumberPostSamplesSummed[MAX_FADC_CHANNELS];
     int Sums_PedestalSubtracted[MAX_FADC_CHANNELS];
+    int Sums_PreData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_Data[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
+    int Sums_PostData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_Clock[MAX_UNPACKED_SUMS];
     int Sums_PulserSynch[MAX_UNPACKED_SUMS];
+    // randoms
+    //int Sums_RandomClock[MAX_UNPACKED_SUMS];
+    //int Sums_RandomPulserSynch[MAX_UNPACKED_SUMS];
+    int Sums_RandomPreData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
+    int Sums_RandomData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
+    int Sums_RandomPostData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     //
     // stuff from accumulators subbank
 
@@ -65,6 +79,9 @@ class fadcdata {
     int TimerPar2;  //parameter 2
     int TimerDac[2];  // DAC1 and DAC2 settings
 
+    int crlVersion; // Readout depends on CRL version in use
+    int newWaveformReadout;
+
   public:
     fadcdata();
     fadcdata(textParams* theParamsIn);
@@ -74,7 +91,11 @@ class fadcdata {
     int UnpackAccumulators(bankstructure bank);
     int UnpackTimer(bankstructure bank);
     int UnpackSums(bankstructure bank, int verbose, int abortOnError);
+    int UnpackSumsV1(bankstructure bank, int verbose, int abortOnError);
+    int UnpackSumsV3(bankstructure bank, int verbose, int abortOnError);
     void DumpBank(bankstructure bank);
+    void SetCRLVersion(int crl) { crlVersion = crl; }
+    void SetWaveformReadout( int version ) { newWaveformReadout = version; }
     //
     //sums info
     int GetSumsNumberADCChannels(){
@@ -85,16 +106,37 @@ class fadcdata {
       return Sums_NumberFADCTriggers[channel];};
     int GetSumsNumberTriggersSummed(int channel){
       return Sums_NumberTriggersSummed[channel];}; //# triggers actually stored
+    int GetSumsNumberRandomsSummed(int channel){
+      return Sums_NumberRandomsSummed[channel];}; //# triggers actually stored
+    int GetNumberPreSamplesSummed(int channel) {
+      return Sums_NumberPreSamplesSummed[channel];};
     int GetNumberSamplesSummed(int channel) {
       return Sums_NumberSamplesSummed[channel];};
+    int GetNumberPostSamplesSummed(int channel) {
+      return Sums_NumberPostSamplesSummed[channel];};
     int GetSumsPedestalSubtracted(int channel){
       return Sums_PedestalSubtracted[channel];};
+    int GetPreSums(int channel,int trigger){
+      return Sums_PreData[channel][trigger];}; // pre pulse summs
     int GetSums(int channel,int trigger){
-      return Sums_Data[channel][trigger];}; //pedestal corrected sum
+      return Sums_Data[channel][trigger];}; // sum (may be pedestal corrected, check crl version)
+    int GetPostSums(int channel,int trigger){
+      return Sums_PostData[channel][trigger];}; // post pulse sum
     int GetSumsClock(int channel, int trigger){
       return Sums_Clock[trigger];}; //return clock time
     int GetSumsPulserSynch(int channel, int trigger){
       return Sums_PulserSynch[trigger];}; //return clock time
+    int GetCRLVersion() { return crlVersion; }
+    int GetWaveformReadoutVersion() { return newWaveformReadout; }
+    double GetMPSTriggerPedestal() { return mpsTriggerPedestal;};
+    double GetMPSRandomPedestal() { return mpsRandomPedestal;};
+    double GetMPSPedestal() { return mpsPedestal;};
+    int GetRandomPreSums(int channel,int trigger){
+      return Sums_RandomPreData[channel][trigger];}; // pre pulse summs
+    int GetRandomSums(int channel,int trigger){
+      return Sums_RandomData[channel][trigger];}; // sum (may be pedestal corrected, check crl version)
+    int GetRandomPostSums(int channel,int trigger){
+      return Sums_RandomPostData[channel][trigger];}; // post pulse sum
     //
     //sample info
     int* GetSamples(int channel){

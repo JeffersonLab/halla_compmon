@@ -55,6 +55,9 @@ class fadcTriggered {
   //Variables output to triggeredWise root tree
   TTree* triggerWiseTree;
   Float_t sumVal;   //fadc triggered data summed over single pulse
+  Float_t sumClock;   //fadc triggered data clock time
+  Float_t sumPedestal; ///fadc triggered data pedestal measurement (crl after 10/1016)
+  Bool_t  sumIsRandom; ///fadc triggered data (is this sum random trigger?)
   //
   // Variables for building pulserWise root tree (MiniMegan pulser info)
   //one entry for each set of 4 MiniMegan settings
@@ -72,6 +75,7 @@ class fadcTriggered {
   Float_t bcmLaserOffSum;
   int helicityState;
   int laserState;
+  int snapshotClock;
   Float_t snapshot[1000]; //will use this for a snapshot array
   int randomTime;// 1-> snapsshots israndom time samples
   //

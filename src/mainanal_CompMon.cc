@@ -49,6 +49,8 @@ int main(int argc, char** argv)
   fadcAccums* theAccums=new fadcAccums(theTextParams,theComptonStatus);
 
   codaData=new THaCodaFile();
+  int crlVersion = 1; /* The CRL version. Read from CODA file, otherwise
+                         asume Spring 2016 running. */
   //
   // Setup intput and output files.  
   //
@@ -80,7 +82,12 @@ int main(int argc, char** argv)
   //
   // Open ROOT outputfile  (keep it simple for now)
   //  char* outfilename =Form("fadc.root");
-  char* outfilename =Form("lnkCompMon.output");
+
+  // TODO: Must fix this. For now, will hardcode a path because really long
+  // (multi day) runs tend to break this simply lnkCompMon.output routine
+  //char* outfilename =Form("lnkCompMon.output");
+  char* outfilename =Form("/data/cmuwork/rootfiles/Fall2016/cornejo/jc2_%d.root",run);
+
   cout<<"output file: "<<outfilename<<endl;
 
   TFile* rootfile = new TFile(outfilename,"RECREATE","fadc data");
@@ -92,7 +99,7 @@ int main(int argc, char** argv)
   theTextParams->updateParamBuffer("compmon.params",run);
   theTextParams->printParamList();
 
-  theComptonStatus->DefineTree(); //run-wise tree
+  theComptonStatus->DefineTrees(); //run-wise and epics-wise trees
   theComptonStatus->newRun();  //initialize status-tracking 
 
   theVMEauxdata->newRun();
@@ -198,18 +205,40 @@ int main(int argc, char** argv)
       int j;
       printf("  ");
       for (int i=0; i<len+4; i++){
-	j= i + 3 -2*(i%4);
-	flagLine[i]=flagLineRaw[j];
-	printf("%c",flagLine[i]);
-	if(flagLine[i]==',') printf("\n  ");
-	if(flagLine[i]=='\0') break;
+        j= i + 3 -2*(i%4);
+        flagLine[i]=flagLineRaw[j];
+        printf("%c",flagLine[i]);
+        if(flagLine[i]==',') printf("\n  ");
+        if(flagLine[i]=='\0') break;
       }
       printf("\n");
       flagLine[len]=NULL;
-      } else if(eventType==17){
-      } else if(eventType==18){
-      } else if(eventType==20){
-      }else{
+      /* Check to see if the version information got stored. If so, the
+       * readout will depend on the version.
+       * For Spring 2016 running, version information was not set.
+       * For Fall 2016 running, version information is set and will
+       * follow the new readout, accordingly.
+       */
+      j = 3+(len+3)/4; // Skip to the end of the flags input
+      if( (buffp[j] >> 16 ) == 0xFADC ) {
+        crlVersion = buffp[j] & 0xFFFF;
+        theFADCdata->SetCRLVersion(crlVersion);
+        printf("\n\nFound CRL verison in CODA file: CRL Version %d\n",crlVersion);
+        j++;
+
+        // If we found versioning info, then that means it's at least CRL
+        // version 3 or newer. So we now look to see if we implemented
+        // the new waveformReadout
+        if( ( buffp[j] >> 16 ) == 0xFBE3 ) {
+          printf("NewWaveformReadout is %s\n\n",(buffp[j]&0xFFFF ? "ENABLED" :
+                "DISABLED" ));
+          theFADCdata->SetWaveformReadout(buffp[j] & 0xFFFF);
+        }
+      }
+    } else if(eventType==17){
+    } else if(eventType==18){
+    } else if(eventType==20){
+    }else{
 	printf(" Unrecognized eventType=%d\n",eventType);
       }
     if(counter%1000==0){

@@ -40,7 +40,8 @@ class comptonStatus {
   comptonStatus();
   comptonStatus(textParams* theParamsIn);
   int DefineStatusBranches(TTree *mytree);  //add-ons to other trees
-  int DefineTree();
+  int DefineEpicsBranches(TTree *mytree);  //add-ons to other trees
+  int DefineTrees();
   int newRun();  //called at start of run to initizlize status variables
   bool newMPS(int codaEventNumber,fadcdata* theFADCData, vmeauxdata* theVMEauxdata); //called at new MPS
   bool SetLaserState();     //uses laserOn bit, laser power reading, and history to determine state
@@ -62,6 +63,10 @@ class comptonStatus {
   float GetEpicsBCMAverage(){ return epics_hacbmf;};
   int GetBeamState(){return beamState;};
   TString DecodeBeamState(int beamState);
+  float ComputeBPMPosition(float x_pos, float x_neg, float x_pos_ped,
+      float x_neg_ped, float alpha, float sensitivity, float freq_conversion);
+  void ComputeBPMPositionLab(float rotX, float rotY, float sintheta,
+      float costheta, float xoff, float yoff, float &xlab, float &ylab);
 
   //helicity stuff
   int GetHelicityState();  //returns -1 if unknown, otherwise 0 or 1 
@@ -83,12 +88,14 @@ class comptonStatus {
   helicityTracker* theHelicityTracker;
   helicityStatus* statusHW;  //pointer to helicity window status info.
   TTree* runWiseTree; //info like run number
+  TTree* epicsWiseTree; //info from epics (in case we just want to process epics events)
   bool runWiseTreeFilled; //use to fill just once after first event
   int helicityState;
   int currentHelicityBit;  //actual helicity Bit for current MPS (not helicitdyi if running delayed)
   textParams* theParams;
   int runnum;
   int countMPS;      
+  int countMPSsinceEPICS;
 
   int countEpics; //count number of EPICS events encoutnered
   
@@ -110,6 +117,27 @@ class comptonStatus {
   float BCMPedestal;
   float BPMSumCalibration;
   float BPMSumPedestal;
+  // BPM calibrations and the like
+  float BPM2Axm_pedestal;
+  float BPM2Axp_pedestal;
+  float BPM2Aym_pedestal;
+  float BPM2Ayp_pedestal;
+  float BPM2Bxm_pedestal;
+  float BPM2Bxp_pedestal;
+  float BPM2Bym_pedestal;
+  float BPM2Byp_pedestal;
+  float BPM2A_alphax;
+  float BPM2A_alphay;
+  float BPM2B_alphax;
+  float BPM2B_alphay;
+  float BPM2A_xoff;
+  float BPM2A_yoff;
+  float BPM2B_xoff;
+  float BPM2B_yoff;
+  float BPM2A_sensitivity;
+  float BPM2B_sensitivity;
+  float BPM2A_angle;
+  float BPM2B_angle;
   //
   int useBPMSumCuts;  //==1 to use sumed BPMs instead of BCM for beam state
   float BPMSum_OnMin;
@@ -171,6 +199,10 @@ class comptonStatus {
   float ip_bpmAy;
   float ip_bpmBx;
   float ip_bpmBy;
+  float bpmAx;
+  float bpmAy;
+  float bpmBx;
+  float bpmBy;
 
   //Accumulator Info
   int ithr_near;
@@ -252,6 +284,9 @@ class comptonStatus {
     float epics_aPosY;
     float epics_bPosX;
     float epics_bPosY;
+    float epics_Thermo1;
+    float epics_Thermo2;
+    float epics_TimeStamp;
 
     float epics_coda_deadtime;	// ratio of mps to l1a
     int epics_wein_right;

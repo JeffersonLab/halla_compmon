@@ -295,6 +295,11 @@ int fadcAccums::DefineTree(){
   mpsWiseTree->Branch("Acc5",&accsig[5]);
   mpsWiseTree->Branch("Acc6",&accsig[6]);
   mpsWiseTree->Branch("Acc7",&accsig[7]);
+  mpsWiseTree->Branch("NAcc0",&naccsig[0]);
+  mpsWiseTree->Branch("NAcc4",&naccsig[4]);
+  mpsWiseTree->Branch("mpsPedestal",&mpsPedestal);
+  mpsWiseTree->Branch("mpsRandomPedestal",&mpsRandomPedestal);
+  mpsWiseTree->Branch("mpsTriggerPedestal",&mpsTriggerPedestal);
 
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(mpsWiseTree);
@@ -410,9 +415,15 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
     
     int64_t IntegratedPed;
     double ped=ped_value;  //from textParams class
+    // get pedestal from random triggers
+    //ped = theFADCdata->GetMPSPedestal();
+    mpsPedestal = theFADCdata->GetMPSPedestal();
+    mpsRandomPedestal = theFADCdata->GetMPSRandomPedestal();
+    mpsTriggerPedestal = theFADCdata->GetMPSTriggerPedestal();
     for(int accum=0; accum<8; accum++){
       IntegratedPed =ped*nacc[accum];
       accsig[accum]=IntegratedPed -accraw[accum];
+      naccsig[accum]=nacc[accum];
     }
 
     float tmp;

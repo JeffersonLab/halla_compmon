@@ -212,9 +212,39 @@ cavity_calibration = 0.118
 cavity_power_pedestal = 182
 cavity_power_off_max = 40
 cavity_power_on_min = 700
-
 ped_value = 3824.06                 ; See Juan Carlos log #15
 TRANSITION = 2752
 ped_value = 3824.24
 TRANSITION = 2753
 ped_value = 3824.48
+
+TRANSITION = 2800 ; Start of Fall 2016 running (with DAQ tests)
+ped_value = 3847.4539
+
+TRANSITION = 2883 ; Start of Fall 2016 running (with DAQ tests)
+ped_value = 3846.5
+
+TRANSITION = 2921
+cavity_calibration=0.25
+cavity_power_pedestal=250
+cavity_power_off_max = 20
+cavity_power_on_min=1800.0
+beam_on_min = 4 ;
+beam_off_max = 0.75;
+clockRateIP=4.E7  ;IP Scaler Clock Rate
+BCM_calibration = 1.0
+BCM_pedestal = 0.0;
+
+TRANSITION=2949
+use_BPMSumCuts=0 ; Stop using BPM to figure out if the beam is on or not
+cavity_calibration=0.065
+cavity_power_pedestal=261
+cavity_power_off_max = 20
+cavity_power_on_min=941.0
+BCM_calibration=0.0025 ; Just some junk calibration because I know these runs have beam OFF
+beam_on_min=4
+BCM_pedestal = 2.456
+beam_off_max=0.25
+
+TRANSITION=3054
+cavity_power_on_min=1800.0

@@ -5,10 +5,13 @@
 //*
 //*****************************
 
+#define MAX_ROOTFILE_SIZE 10000000000  // Roughly 10 GB
+
 #include "comptonStatus.h"
 
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 comptonStatus::comptonStatus(){
+  TTree::SetMaxTreeSize(MAX_ROOTFILE_SIZE);
   //constructor
   runWiseTree=0;
   runWiseTreeFilled=false;  //used to allow single fill of runWiseTree
@@ -16,6 +19,7 @@ comptonStatus::comptonStatus(){
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 comptonStatus::comptonStatus(textParams* theParamsIn){
+  TTree::SetMaxTreeSize(MAX_ROOTFILE_SIZE);
   //constructor
   theParams=theParamsIn;
   theHelicityTracker=new helicityTracker();
@@ -49,7 +53,7 @@ TString comptonStatus::DecodeBeamState(int beamState){
   }
 }
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-int comptonStatus::DefineTree(){
+int comptonStatus::DefineTrees(){
   printf("DEBUG *****  runWiseTree created\n");
 
   runWiseTree=new TTree("runwise",
@@ -76,42 +80,16 @@ int comptonStatus::DefineTree(){
   runWiseTree->Branch("HTB_rampdelay", &rampdelay, "HTB_rampdelay/I");
   runWiseTree->Branch("HTB_inttime", &inttime, "HTB_inttime/I");
 
+  // Stuff from EPICS events
+  epicsWiseTree = new TTree("epicswise","Info from just EPICS events");
+  DefineEpicsBranches(epicsWiseTree);
+
   return 0;  
 }
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-int comptonStatus::DefineStatusBranches(TTree* mytree){
-// External-data branches containing status info shared by all tree
-  mytree->Branch("runNumber", &run_number, "runNumber/I");
-  mytree->Branch("helicityState", &helicityState, "helicityState/I");
-  mytree->Branch("laserState", &currentLaserState, "laserstate/I");
-  mytree->Branch("combinedSpinState", &currentSpinState, "CombinedSpinState/I");
-  mytree->Branch("beamState", &beamState, "beamState/I");
-  mytree->Branch("numTriggers", &numTriggers, "numTriggers/I");
-  mytree->Branch("mpsCoda", &mpsCoda, "mpsCoda/I"); //mps # read from Coda header
-  mytree->Branch("mpsSignal", &mpsSignal, "mpsSignal/I"); //mps signal state
-  mytree->Branch("mpsScaler", &mpsScaler, "mpsScaler/I");  //scaler mps read
-  mytree->Branch("mpsAnalyzed", &countMPS, "mpsAnalyzed/I"); //mps counter
+int comptonStatus::DefineEpicsBranches(TTree* mytree){
   mytree->Branch("countEpics", &countEpics, "countEpics/I");
-  mytree->Branch("countLaserCycles", &countLaserCycles, "countLaserCycles/i");
-
-  mytree->Branch("cavPowerCalibrated", &cavPowerCalibrated, "cavPowerCalibrated/F");
-  mytree->Branch("rawCavPower", &rawCavPowFloat, "rawCavPower/F");
-  mytree->Branch("s1power", &ip_s1power, "s1power/F");
-  mytree->Branch("s2power", &ip_s2power, "s2power/F");
-
-  mytree->Branch("bcm", &calbcm, "bcm/F");
-  mytree->Branch("rawBCM", &rawBCMFloat, "rawBCM/F");
-  mytree->Branch("bpmSum", &bpmsum, "bpmSum/F");
-
-  mytree->Branch("bpmAx_raw", &ip_bpmAx, "bpmAx_raw/F");
-  mytree->Branch("bpmAy_raw", &ip_bpmAy, "bpmAy_raw/F");
-  mytree->Branch("bpmBx_raw", &ip_bpmBx, "bpmBx_raw/F");
-  mytree->Branch("bpmBy_raw", &ip_bpmBy, "bpmBy_raw/F");
-
-  mytree->Branch("clockRun", &clockscaler, "clockRun/i");
-  mytree->Branch("clockIP", &clockIP, "clockIP/i");
-  mytree->Branch("clockdiff", &clock_diff, "clockdiff/I");
-
   //SLOW epics stuff
   mytree->Branch("epics_evnum",&epics_evnum,"epics_evnum/I");
   mytree->Branch("epics_PMTRate",&epics_PMTRate,"epics_PMTRATE/F");
@@ -132,6 +110,54 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("epics_bpmBx",&epics_bPosX,"epics_bpmBx/F");
   mytree->Branch("epics_bpmBy",&epics_bPosY,"epics_bpmBy/F");
   mytree->Branch("epics_coda_deadtime", &epics_coda_deadtime, "epics_coda_deadtime/F");
+  mytree->Branch("epics_Thermo1",&epics_Thermo1,"epics_Thermo1/F");
+  mytree->Branch("epics_Thermo2",&epics_Thermo2,"epics_Thermo2/F");
+  mytree->Branch("epics_TimeStamp",&epics_TimeStamp,"epics_TimeStamp/F");
+
+  return 0;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+int comptonStatus::DefineStatusBranches(TTree* mytree){
+// External-data branches containing status info shared by all tree
+  mytree->Branch("runNumber", &run_number, "runNumber/I");
+  mytree->Branch("helicityState", &helicityState, "helicityState/I");
+  mytree->Branch("laserState", &currentLaserState, "laserstate/I");
+  mytree->Branch("combinedSpinState", &currentSpinState, "CombinedSpinState/I");
+  mytree->Branch("beamState", &beamState, "beamState/I");
+  mytree->Branch("numTriggers", &numTriggers, "numTriggers/I");
+  mytree->Branch("mpsCoda", &mpsCoda, "mpsCoda/I"); //mps # read from Coda header
+  mytree->Branch("mpsSignal", &mpsSignal, "mpsSignal/I"); //mps signal state
+  mytree->Branch("mpsScaler", &mpsScaler, "mpsScaler/I");  //scaler mps read
+  mytree->Branch("mpsAnalyzed", &countMPS, "mpsAnalyzed/I"); //mps counter
+  mytree->Branch("mpsSinceEpics",&countMPSsinceEPICS,"mpsSinceEpics/I");
+  mytree->Branch("countLaserCycles", &countLaserCycles, "countLaserCycles/i");
+
+  mytree->Branch("cavPowerCalibrated", &cavPowerCalibrated, "cavPowerCalibrated/F");
+  mytree->Branch("rawCavPower", &rawCavPowFloat, "rawCavPower/F");
+  mytree->Branch("s1power", &ip_s1power, "s1power/F");
+  mytree->Branch("s2power", &ip_s2power, "s2power/F");
+
+  mytree->Branch("bcm", &calbcm, "bcm/F");
+  mytree->Branch("rawBCM", &rawBCMFloat, "rawBCM/F");
+  mytree->Branch("bpmSum", &bpmsum, "bpmSum/F");
+
+  mytree->Branch("bpmAx_raw", &ip_bpmAx, "bpmAx_raw/F");
+  mytree->Branch("bpmAy_raw", &ip_bpmAy, "bpmAy_raw/F");
+  mytree->Branch("bpmBx_raw", &ip_bpmBx, "bpmBx_raw/F");
+  mytree->Branch("bpmBy_raw", &ip_bpmBy, "bpmBy_raw/F");
+
+  // The lab coordinates
+  mytree->Branch("bpmAx", &bpmAx, "bpmAx/F");
+  mytree->Branch("bpmAy", &bpmAy, "bpmAy/F");
+  mytree->Branch("bpmBx", &bpmBx, "bpmBx/F");
+  mytree->Branch("bpmBy", &bpmBy, "bpmBy/F");
+
+  mytree->Branch("clockRun", &clockscaler, "clockRun/i");
+  mytree->Branch("clockIP", &clockIP, "clockIP/i");
+  mytree->Branch("clockdiff", &clock_diff, "clockdiff/I");
+
+  //SLOW epics stuff
+  DefineEpicsBranches(mytree);
 
   //mytree->Branch("rtcavpow", &rtcavpow, "rtcavpow/F");
   mytree->Branch("epbcmu3", &epbcmu3, "epbcmu3/F");
@@ -171,6 +197,7 @@ int comptonStatus::newRun(){
   //Init all counters and status
   countMPS=0;
   countEpics=0;
+  countMPSsinceEPICS=-1;  //not EPICS event yet encountered
   epics_evnum=-1;  //receives EPICS event number (not valid till first EPICS event)
   SetEpicsDefaults();  //erase old EPICS values
   //helicity pattern decoding info
@@ -197,6 +224,27 @@ int comptonStatus::newRun(){
   cavityPowerOnMin=theParams->getFloat("cavity_power_on_min");
   cavityPowerOffMax=theParams->getFloat("cavity_power_off_max");
   clockRateIP=theParams->getFloat("clockRateIP");  
+  // BPM parameters
+  BPM2Axm_pedestal=theParams->getFloat("BPM2Axm_pedestal");
+  BPM2Axp_pedestal=theParams->getFloat("BPM2Axp_pedestal");
+  BPM2Aym_pedestal=theParams->getFloat("BPM2Aym_pedestal");
+  BPM2Ayp_pedestal=theParams->getFloat("BPM2Ayp_pedestal");
+  BPM2Bxm_pedestal=theParams->getFloat("BPM2Bxm_pedestal");
+  BPM2Bxp_pedestal=theParams->getFloat("BPM2Bxp_pedestal");
+  BPM2Bym_pedestal=theParams->getFloat("BPM2Bym_pedestal");
+  BPM2Byp_pedestal=theParams->getFloat("BPM2Byp_pedestal");
+  BPM2A_alphax=theParams->getFloat("BPM2A_alphax");
+  BPM2A_alphay=theParams->getFloat("BPM2A_alphay");
+  BPM2B_alphax=theParams->getFloat("BPM2B_alphax");
+  BPM2B_alphay=theParams->getFloat("BPM2B_alphay");
+  BPM2A_xoff=theParams->getFloat("BPM2A_xoff");
+  BPM2A_yoff=theParams->getFloat("BPM2A_yoff");
+  BPM2B_xoff=theParams->getFloat("BPM2B_xoff");
+  BPM2B_yoff=theParams->getFloat("BPM2B_yoff");
+  BPM2A_sensitivity=theParams->getFloat("BPM2A_sensitivity");
+  BPM2B_sensitivity=theParams->getFloat("BPM2B_sensitivity");
+  BPM2A_angle=theParams->getFloat("BPM2A_angle")*0.0174533;
+  BPM2B_angle=theParams->getFloat("BPM2B_angle")*0.0174533;
   //
   countLaserCycles=0;
   subcountMPSLaserCycles=0; //number MPS within current laser mode
@@ -218,8 +266,9 @@ int comptonStatus::newRun(){
 }
 bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdata* theAuxData){
   countMPS++;   //mps count via count of analyzed Event 1s
+  if(countMPSsinceEPICS>=0) countMPSsinceEPICS++;
   mpsCoda=codaEventNumber;  //mps count via CODA Event 1 header
-
+  
   mpsScaler=theAuxData->GetMPSScaler();  //mps count via VME scaler
   mpsSignal=theAuxData->GetMPSSignal();
   numTriggers=theFADCdata->GetSumsNumberTriggers(0); //number of calorimeter triggers
@@ -266,34 +315,57 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   bcmscaler =theAuxData->GetGatedBCM();  //bcm value from VTF gated scaler
   rawBCMFloat= bcmscaler;
 
+  float freqConversion = float(clockRateIP)/float(clockIP);
+
   //backup info for beam on/off
   int bpmXP, bpmXM;
   int bpmYP, bpmYM;
-  bpmYM=theAuxData-> GetVtoFBPM2AymIPScaler();
-  bpmYP=theAuxData-> GetVtoFBPM2AypIPScaler();
-  bpmXM=theAuxData-> GetVtoFBPM2AxmIPScaler();
-  bpmXP=theAuxData-> GetVtoFBPM2AxpIPScaler();
-  //ignor pedestal offset and calibration for now
+  bpmYM=theAuxData->GetVtoFBPM2AymIPScaler();
+  bpmYP=theAuxData->GetVtoFBPM2AypIPScaler();
+  bpmXM=theAuxData->GetVtoFBPM2AxmIPScaler();
+  bpmXP=theAuxData->GetVtoFBPM2AxpIPScaler();
+  // quick BPM sum
+  bpmsum=bpmXP+bpmXM+bpmYP+bpmYM;
+  // Determine the rotated BPM values
+  float rot_bpmAx=ComputeBPMPosition(bpmXP,bpmXM,BPM2Axp_pedestal,
+      BPM2Axm_pedestal,BPM2A_alphax, BPM2A_sensitivity,freqConversion);
+  float rot_bpmAy=ComputeBPMPosition(bpmYP,bpmYM,BPM2Ayp_pedestal,
+      BPM2Aym_pedestal,BPM2A_alphay, BPM2A_sensitivity,freqConversion);
+  // For backwards compatibility, also do the "raw" values, with no
+  // calibrations
   if(bpmYM+bpmYP>0){
     ip_bpmAy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmYM+bpmYP>0){
     ip_bpmAx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
-  //BPM sum used as back beam on/off.  normalize by clock and calibration further below
-  bpmsum=bpmXP+bpmXM+bpmYP+bpmYM;
-
+  // Now do the second BPM
   bpmYM=theAuxData-> GetVtoFBPM2BymIPScaler();
   bpmYP=theAuxData-> GetVtoFBPM2BypIPScaler();
   bpmXM=theAuxData-> GetVtoFBPM2BxmIPScaler();
   bpmXP=theAuxData-> GetVtoFBPM2BxpIPScaler();
-  //ignor pedestal offset and calibration for now
+  float rot_bpmBx=ComputeBPMPosition(bpmXP,bpmXM,BPM2Bxp_pedestal,
+      BPM2Bxm_pedestal,BPM2B_alphax, BPM2B_sensitivity,freqConversion);
+  float rot_bpmBy=ComputeBPMPosition(bpmYP,bpmYM,BPM2Byp_pedestal,
+      BPM2Bym_pedestal,BPM2B_alphay, BPM2B_sensitivity,freqConversion);
+  // For backwards compatibility, also do the "raw" values, with no
+  // calibrations
   if(bpmYM+bpmYP>0){
     ip_bpmBy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmXM+bpmXP>0){
     ip_bpmBx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
+  // Now determine the lab frame beam positions
+  float BPM2A_sintheta = sin(BPM2A_angle);
+  float BPM2A_costheta = cos(BPM2A_angle);
+  float BPM2B_sintheta = sin(BPM2B_angle);
+  float BPM2B_costheta = cos(BPM2B_angle);
+  ComputeBPMPositionLab(rot_bpmAx,rot_bpmAy,BPM2A_sintheta,BPM2A_costheta,
+      BPM2A_xoff,BPM2A_yoff,bpmAx,bpmAy);
+  ComputeBPMPositionLab(rot_bpmBx,rot_bpmBy,BPM2B_sintheta,BPM2B_costheta,
+      BPM2B_xoff,BPM2B_yoff,bpmBx,bpmBy);
+
   //assume 40 MHz clock, but this may not be correct for Spring 2016
   rawCavPowFloat=theAuxData->GetCavityPowerScaler();
   if(clockIP<0){
@@ -536,6 +608,9 @@ void comptonStatus::SetEpicsDefaults(){
   epics_aPosY=defValue;
   epics_bPosX=defValue;
   epics_bPosY=defValue;
+  epics_Thermo1=defValue;
+  epics_Thermo2=defValue;
+  epics_TimeStamp=0;
  return;
 }
 
@@ -543,7 +618,19 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
       TString spol;
       int evtype = codadata[1]>>16;
       int evnum = codadata[4];
+      /*      printf("DEBUG UnpackEpics evntype=%d, evnum=%d\n",evtype,evnum);
+      for (int i=0; i<20; i++){
+	printf("%2d %10u 0x%08x  ",i,codadata[i],codadata[i]);
+	uint32_t tmp=codadata[i];
+	for (int j=0; j<4; j++){
+	  printf(" %c ",tmp&0xFF);
+	  tmp=tmp>>8;
+	}
+	printf("\n");
+      }
+      */
       countEpics++;
+      countMPSsinceEPICS=0;  //counter for MPS events since last EPICS event
       //  cout << "\nEvent #" << evnum << ": event type is " << evtype;
       if (evtype == 131)		// EPICS event
       {
@@ -566,6 +653,10 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 	valid=getEpicsValue(epics,"IPM1P02A.XPOS",&epics_aPosX);
 	valid=getEpicsValue(epics,"IPM1P02B.YPOS",&epics_bPosY);
 	valid=getEpicsValue(epics,"IPM1P02B.XPOS",&epics_bPosX);
+	
+	valid=getEpicsValue(epics,"HaComptonSIM900_P2T1",&epics_Thermo1);
+	valid=getEpicsValue(epics,"HaComptonSIM900_P2T2",&epics_Thermo2);
+	epics_TimeStamp = epics->GetTimeStamp("HaComptonSIM900_P2T1");
 
         if (epics->IsLoaded("IGL1I00OD16_16")){
           spol = epics->GetString("IGL1I00OD16_16");
@@ -609,10 +700,19 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
           horizontalFingerCurrent = epics->GetData("MF2b1461_11ch7property.E");
 	*/
       }
+      // Fill the EPICS tree
+      epicsWiseTree->Fill();
+      /*
+      if(countMPSsinceEPICS%500==0&&countMPSsinceEPICS>0)
+        epicsWiseTree->AutoSave("SaveSelf");
+        */
       return 0;
 }
 int comptonStatus::EpicsDebugDump(){
       cout << "\n----------EPICS DATA DUMP-----------";
+      cout <<"\nEpics Event Number: "<<epics_evnum;
+      cout <<"\nEpics Event TimeStamp: "<<epics_TimeStamp;
+      cout <<"\nEpics Counter "<<countEpics;
       cout << "\nCavity power: " << epics_cavpow;
       cout << "\nCavity polarization direction: " << epics_cavpoldir;
       cout << "\nCavity polarization percentage: " << epics_cavpolpercent;
@@ -620,8 +720,27 @@ int comptonStatus::EpicsDebugDump(){
       cout << "\nCurrent on crystal PMT: " << epics_crystalCurrent;
       cout << "\nAverage beam current: " << epics_hacbmf;
       cout << "\nInsertable half-waveplate state: " << epics_ihwp_in;
+      cout << "\nPhDet Temperature1: " << epics_Thermo1;
+      cout << "\nPhDet Temperature2: " << epics_Thermo2;
       cout << endl;
        
       return 0;
 };
-
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+float comptonStatus::ComputeBPMPosition( float x_pos, float x_neg,
+    float x_pos_ped, float x_neg_ped, float alpha, float sensitivity,
+    float freq_conversion){
+  x_pos *= freq_conversion;
+  x_neg *= freq_conversion;
+  float denom = ((x_pos-x_pos_ped) + alpha*(x_neg-x_neg_ped));
+  if(denom!=0)
+    return sensitivity*((x_pos-x_pos_ped) - alpha*(x_neg-x_neg_ped))/denom;
+  return 1e6;
+}
+//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+void comptonStatus::ComputeBPMPositionLab(float xrot, float yrot,
+      float sintheta, float costheta, float xoff, float yoff,
+      float &xlab, float &ylab){
+  xlab = xrot*costheta-yrot*sintheta-xoff;
+  ylab = xrot*sintheta+yrot*costheta-yoff;
+}

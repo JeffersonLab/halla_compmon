@@ -24,7 +24,7 @@ using namespace std;
 
 class textParams {
 public:
-	int findFlag(const char* flag); //see if flag exists
+	int findFlag(const char* flag, int startPos = 0); //see if flag exists
 	int getString(char* value, const int maxsize, const char* flag);  //return string
 	long getInt(const char* flag);
 	float getFloat(const char* flag);

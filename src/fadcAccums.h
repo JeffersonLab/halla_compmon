@@ -68,6 +68,10 @@ class fadcAccums {
   int nacc[NUM_ACCUM_TYPES];
   int64_t accraw[NUM_ACCUM_TYPES];  //raw acumuilator data
   double accsig[NUM_ACCUM_TYPES];   //pedestal corrected accumulator data
+  double naccsig[NUM_ACCUM_TYPES];   //number of samples in accumulator data
+  double mpsPedestal; // Pedestal as determined from triggered+randoms sums.
+  double mpsRandomPedestal; // Pedestal as determined from randoms sums.
+  double mpsTriggerPedestal; // Pedestal as determined from triggered sums.
   //
   // Quartetwise and Laserwise info
   TTree* quartetWiseTree;
