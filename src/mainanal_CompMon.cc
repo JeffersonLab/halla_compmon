@@ -31,6 +31,124 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+  // Parse command line options
+  std::string configFile("compmon.config");
+  int maxEvents = -1;
+  int run = -1;
+  bool paramsFound = false;
+  bool paramsError = false;
+  for(int i = 1; i < argc && !paramsError; i++) {
+    std::string paramName;
+    std::string paramValue;
+    std::string arg(argv[i]);
+    size_t pos1 = arg.find_first_of("-");
+    if(pos1 != std::string::npos && pos1 == 0) { // found a -
+      size_t length = arg.length();
+      if(length > 1 ) { // Valid parameter
+        paramsFound = true;
+        paramName=argv[i][1];
+        size_t pos2 = arg.find_first_of("=");
+        if(pos2 != std::string::npos && pos2==2) { // found an equals
+          if(length <=3 ) {
+            paramsError=true;
+            std::cerr << "Invalid command line option: '"
+              << argv[i] << "'" << std::endl;
+          } else {
+            paramValue = arg.substr(3,length);
+          }
+        } else if(length > 2) { // No equal sign used, still valid
+          paramValue = arg.substr(2,length);
+        } else { // Next parameter must be the actual value
+          if(i+1 < argc) { // Ensure there are enough parameters
+            i++;
+            paramValue = argv[i];
+          } else {
+            std::cerr << "Missing argument to command: '" << argv[i] << "'"
+              << std::endl;
+            paramsError = true;
+          }
+        }
+      } else {
+        paramsError = true;
+        std::cerr << "Invalid command line option: '"
+          << argv[i] << "'" << std::endl;
+      }
+    } else { // Must be the default run number
+      paramName = "r";
+      paramValue = argv[i];
+      paramsFound = true;
+    }
+
+    // Finally, get the required and optional parameters
+    if(paramsError)
+      continue;
+    if(paramName.compare("r") == 0) {
+      run = atoi(paramValue.c_str());
+    } else if (paramName.compare("c") == 0) {
+      configFile = paramValue;
+    } else if (paramName.compare("n") == 0) {
+      maxEvents = atoi(paramValue.c_str());
+    } else {
+      paramsError = true;
+      std::cerr << "Invalid command line option: '"
+        << argv[i] << "'" << std::endl;
+    }
+  }
+
+  if(run < 0) {
+    paramsError = true;
+    std::cerr << "Invalid run number specified." << std::endl;
+  }
+
+  if(!paramsFound || paramsError) {
+    std::cerr << "Usage: " << std::endl
+      << "  " << argv[0] << " [options] runnumber " << std::endl
+      << "    where options are: " << std::endl
+      << "      -c config_file" << std::endl
+      << "      -n maxEvents"  << std::endl;
+    return -1;
+  }
+
+  // Open up the config file
+  TString dataPath = "/data/cmu";
+  TString dataPrefix = "FadcCalo_";
+  TString dataPostfix = ".dat";
+  TString outPath = "/data/cmuwork";
+  TString outPrefix ="compmon_";
+  TString paramsFileName = "compmon.params";
+  // First, open up the config file and change any hard coded setting here
+  fstream inConfig;
+  inConfig.open(configFile,std::ios::in);
+  std::string tmpConfigLine;
+  while( inConfig >> tmpConfigLine && !inConfig.eof() ) {
+    size_t pos1 = tmpConfigLine.find_first_of("=");
+    if(pos1 == std::string::npos) {
+      std::cerr << "Invalid line in config file: " << tmpConfigLine
+        << std::endl;
+      return -2;
+    }
+    std::string varName = tmpConfigLine.substr(0,pos1);
+    std::string varValue = tmpConfigLine.substr(pos1+1,tmpConfigLine.length());
+
+    if(varName.compare("dataPath")==0) {
+      dataPath = varValue;
+    } else if ( varName.compare("dataPrefix") == 0) {
+      dataPrefix = varValue;
+    } else if ( varName.compare("dataPostfix") == 0 ) {
+      dataPostfix = varValue;
+    } else if ( varName.compare("outPath") == 0 ) {
+      outPath = varValue;
+    } else if ( varName.compare("outPrefix") == 0 ) {
+      outPrefix = varValue;
+    } else if ( varName.compare("paramsFileName") == 0) {
+      paramsFileName = varValue;
+    }
+  }
+  TString dataFileName = TString::Format("%s/%s%d%s",dataPath.Data(),
+      dataPrefix.Data(), run,dataPostfix.Data());
+  TString outFileName = TString::Format("%s/%s%d.root",outPath.Data(),
+      outPrefix.Data(),run);
+
   //+++++++++++++++++++++++++++++++
   //  initialize instances of classes, etc.
   //
@@ -54,6 +172,7 @@ int main(int argc, char** argv)
   //
   // Setup intput and output files.  
   //
+  /* Old method
   TString fileName ;
   int run;
   // 
@@ -86,17 +205,24 @@ int main(int argc, char** argv)
   // TODO: Must fix this. For now, will hardcode a path because really long
   // (multi day) runs tend to break this simply lnkCompMon.output routine
   //char* outfilename =Form("lnkCompMon.output");
-  char* outfilename =Form("/data/cmuwork/rootfiles/Fall2016/cornejo/jc2_%d.root",run);
-
+  char* outfilename =Form("/home/cornejo/scratch/compton/rootfiles/jc2_%d.root",run);
   cout<<"output file: "<<outfilename<<endl;
+  */
 
-  TFile* rootfile = new TFile(outfilename,"RECREATE","fadc data");
+  if(codaData->codaOpen(dataFileName, "r") != 0) {
+    std::cerr << "\nERROR: Cannot open CODA file: "
+      << dataFileName.Data() << std::endl;
+    return -1;  
+  }
+
+
+  TFile* rootfile = new TFile(outFileName,"RECREATE","fadc data");
   rootfile->SetCompressionLevel(0);
   //
   // setup parameters  (edit fadcparams.h to change values)
   // then setup histograms and trees
   //
-  theTextParams->updateParamBuffer("compmon.params",run);
+  theTextParams->updateParamBuffer(paramsFileName.Data(),run);
   theTextParams->printParamList();
 
   theComptonStatus->DefineTrees(); //run-wise and epics-wise trees
