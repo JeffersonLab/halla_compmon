@@ -49,6 +49,7 @@ class fadcTriggered {
   // parmameters from textParams class
   int channel_calorimeter_PMT;
   Float_t ped_value;
+  int calculate_sum_pedestal; // Should the sum pedestal be calculated or just use ped_value?
   void labelSpinSortedHistos(TH1F* histo); //used to label x-axis of laser-sorted histos
   int NumSamples;  //Filled with number of valid waveform samples (snapshots)
   //

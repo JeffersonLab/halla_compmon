@@ -39,6 +39,7 @@ void fadcTriggered::newRun(){
   bcmLaserOffSum=0.;
   ped_value=theParams->getFloat("ped_value");
   channel_calorimeter_PMT=theParams->getFloat("channel_calorimeter_PMT");
+  calculate_sum_pedestal=theParams->getInt("calculate_sum_pedestal");
   return;
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -164,15 +165,19 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
 
     int crlVersion = theFADCdata->GetCRLVersion();
     int enableNewWaveformReadout = theFADCdata->GetWaveformReadoutVersion();
-    bool calculatePed = (crlVersion>=3 && enableNewWaveformReadout);
+    int sumSign = 1;
+    bool calculatePed = false;
     /* (jc2) Early versions of the CRL (before version 3) corrected the
      * pedestal on-the-fly (meaning, it's in the CODA file). We want to undo
      * this for those versions. So the sign is positive in this case.
      * For CRL versions >= 3 the sign should be negative. */
-    int sumSign = 1;
-    //
-    if(calculatePed) {
-      numInPedSum = theFADCdata->GetNumberPreSamplesSummed(chan);
+    if(crlVersion>=3 && enableNewWaveformReadout) {
+      if(calculate_sum_pedestal) {
+        numInPedSum = theFADCdata->GetNumberPreSamplesSummed(chan);
+        calculatePed = true;
+      } else {
+        sumPedestal = numInSum*ped_value;
+      }
       sumSign = -1;
     } else {
       // We want to undo the pedestal correction that was done by the
