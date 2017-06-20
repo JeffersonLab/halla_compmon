@@ -147,6 +147,11 @@ class comptonStatus {
   float cavityPowerOnMin;
   float cavityPowerOffMax;
   float clockRateIP;   //clock rate used for IP scaler normalization
+  // since clockIP signal was bad for some time, we may choose
+  // not to use it to normalize the scalers, and instead use
+  // one specified by the user.
+  float clockNormalization; // When set to zero uses clockIP instead
+  float clockValue; // place holder for the clock
   //End of parameters
   int countLaserCycles;  //count number complete laser cycles
   int subcountMPSLaserCycles; //count MPS within current laser cycle

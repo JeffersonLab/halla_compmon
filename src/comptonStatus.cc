@@ -224,6 +224,7 @@ int comptonStatus::newRun(){
   cavityPowerOnMin=theParams->getFloat("cavity_power_on_min");
   cavityPowerOffMax=theParams->getFloat("cavity_power_off_max");
   clockRateIP=theParams->getFloat("clockRateIP");  
+  clockNormalization=theParams->getFloat("use_clock_normalization");
   // BPM parameters
   BPM2Axm_pedestal=theParams->getFloat("BPM2Axm_pedestal");
   BPM2Axp_pedestal=theParams->getFloat("BPM2Axp_pedestal");
@@ -315,7 +316,12 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   bcmscaler =theAuxData->GetGatedBCM();  //bcm value from VTF gated scaler
   rawBCMFloat= bcmscaler;
 
-  float freqConversion = float(clockRateIP)/float(clockIP);
+  if(clockNormalization>0) {
+    clockValue = clockNormalization;
+  } else {
+    clockValue = clockIP;
+  }
+  float freqConversion = clockRateIP/clockValue;
 
   //backup info for beam on/off
   int bpmXP, bpmXM;
@@ -368,18 +374,18 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
 
   //assume 40 MHz clock, but this may not be correct for Spring 2016
   rawCavPowFloat=theAuxData->GetCavityPowerScaler();
-  if(clockIP<0){
+  if(clockValue<0){
     cavPowerCalibrated=0;
     calbcm=0;
     bpmsum=0;
   }else{
     cavPowerCalibrated=clockRateIP*( cavPowerCalibration*
-    theAuxData->GetCavityPowerScaler() )/clockIP;
+    theAuxData->GetCavityPowerScaler() )/clockValue;
     cavPowerCalibrated+=-cavPowerPedestal;
-    calbcm = (float) bcmscaler/ (float)clockIP;
+    calbcm = (float) bcmscaler/clockValue;
     calbcm *= clockRateIP*BCMCalibration;
     calbcm +=-BCMPedestal;
-    bpmsum *=clockRateIP*BPMSumCalibration/(float)clockIP;
+    bpmsum *=clockRateIP*BPMSumCalibration/clockValue;
     bpmsum += -BPMSumPedestal;
   }
   beamStatePrev=beamState;      //keep previous MPS beam on/off status
