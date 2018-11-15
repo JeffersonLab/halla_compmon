@@ -15,6 +15,8 @@
 #define MAX_FADC_EVENTS 5000
 #define MAX_UNPACKED_SUMS 5000
 class fadcdata {
+  public:
+    int Sums_PulserSynch2[MAX_UNPACKED_SUMS];
   private:
   textParams* theParams; //pointer to instance of parameter Class
   //    double PedValue[MAX_FADC_CHANNELS];
@@ -52,6 +54,8 @@ class fadcdata {
     int Sums_PostData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_Clock[MAX_UNPACKED_SUMS];
     int Sums_PulserSynch[MAX_UNPACKED_SUMS];
+    //int Sums_RandomClock[MAX_UNPACKED_SUMS];
+    //int Sums_RandomPulserSynch[MAX_UNPACKED_SUMS];
     // randoms
     //int Sums_RandomClock[MAX_UNPACKED_SUMS];
     //int Sums_RandomPulserSynch[MAX_UNPACKED_SUMS];
@@ -126,6 +130,8 @@ class fadcdata {
       return Sums_Clock[trigger];}; //return clock time
     int GetSumsPulserSynch(int channel, int trigger){
       return Sums_PulserSynch[trigger];}; //return clock time
+    int GetSumsPulserSynch2(int channel, int trigger){
+      return Sums_PulserSynch2[trigger];}; //return clock time
     int GetCRLVersion() { return crlVersion; }
     int GetWaveformReadoutVersion() { return newWaveformReadout; }
     double GetMPSTriggerPedestal() { return mpsTriggerPedestal;};

@@ -66,6 +66,8 @@ class fadcTriggered {
   Float_t MMpulse[4]; 
   int MMVarDacIndex;
   int MMVarDacSetting;
+  int MMSynchIndex;
+  int MMSynchIndexClock;
   //
   // special tree for snapshots  (sampled waveforms)
   TTree* snapshotsTree;

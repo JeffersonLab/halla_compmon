@@ -129,6 +129,9 @@ int fadcTriggered::DefineTriggeredTree(){
   pulserWiseTree->Branch("p4",&MMpulse[3],"p4/F");
   pulserWiseTree->Branch("varIndex",&MMVarDacIndex,"varIndex/I");
   pulserWiseTree->Branch("varDAC",&MMVarDacSetting,"varDAC/I");
+  pulserWiseTree->Branch("synchIndex",&MMSynchIndex,"synchIndex/I");
+  pulserWiseTree->Branch("synchIndexClock",&MMSynchIndexClock,"synchIndexClock/I");
+  theStatus->DefineStatusBranches(pulserWiseTree);
   return 0;
 }
 void fadcTriggered::labelSpinSortedHistos(TH1F* histo){
@@ -200,7 +203,7 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
 
     //following sorted fills are only for BEAM ON condiation
     // (note jc2 11/03/2016: Removed this beam on requirement)
-    if(beamOn){
+    if(beamOn||true){
       if(laserOn){
         mpsLaserOnCount++;
         bcmLaserOnSum+=bcm;
@@ -216,6 +219,11 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
             (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
         }
         sumVal = sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;  //move to roottree slot
+        sumClock = theFADCdata->GetSumsClock(chan,i);
+        //std::cout << "sumPedestal: " << sumPedestal
+        //  << ", sumVal: " << sumVal
+        //  << ", numTriggersAccepted: " << numTriggersAccepted
+        //  << std::endl;
         hTrig_sums_All->Fill(sumVal);
         if(laserOn) hTrig_sums_laserOn->Fill(sumVal);
         if(laserOff) hTrig_sums_laserOff->Fill(sumVal);
@@ -223,32 +231,26 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
         triggerWiseTree->Fill();
       }
     }
-    // Now store the randoms
-    sumIsRandom = true;
-    for(int i=0; i<numRandomsAccepted; i++){
-      sumPedestal = numInSum*(theFADCdata->GetRandomPreSums(chan,i)/double(numInPedSum));
-      sumVal = sumSign*theFADCdata->GetRandomSums(chan,i)+sumPedestal;
-      triggerWiseTree->Fill();
-    }
     // sort pulses for pulserWiseTree if MiniMegan pulser running
     MMVarDacIndex=theFADCdata->GetSumsPulserIndex();//pulser setting index
     MMVarDacSetting=theVMEauxdata->GetDACSetting();//pulser DAC setting
+    MMSynchIndex=-1;
     int synchIndex=-1;
     if(numTriggersAccepted>4){
       //Synch Index should be set for one of every 4.  Find the first one
       //ignore the first one in case it overlaps an integration period start
       int bitPattern=0;
       for(int i=1; i<5 ; i++){
-	bitPattern= (bitPattern<<1) | theFADCdata->GetSumsPulserSynch(0,i);
+        bitPattern= (bitPattern<<1) | theFADCdata->GetSumsPulserSynch(0,i);
       }
       if(bitPattern==0x8) {
-	synchIndex=1;
+        synchIndex=1;
       }else if (bitPattern==0x4){
-	synchIndex=2;
+        synchIndex=2;
       }else if (bitPattern==0x2){
-	synchIndex=3;
+        synchIndex=3;
       }else if (bitPattern==0x1){
-	synchIndex=4;
+        synchIndex=4;
       }
     }
     // if(synchIndex>=0){
@@ -263,37 +265,50 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
     int indexPulser;
     bool goodPulserSet=true;
     indexPulser=0;
+    MMSynchIndex=synchIndex;
     if(synchIndex>=0){
+      int tmpBit = 0;
       for(int i=synchIndex; i<numTriggersAccepted-1; i++){
-	if(indexPulser==0 &&(!theFADCdata->GetSumsPulserSynch(0,i))){
-	  printf("Error, Missing MM Pulser synch mps=%6d trigger=%d NumTrig %3d\n",
-		 mpsCount,i,numTriggersAccepted);
-	  goodPulserSet=false;
-	}
-	if(indexPulser!=0 &&( theFADCdata->GetSumsPulserSynch(0,i))){
-	  printf("Error,   Out of place MM Pulser synch mps=%6d trigger=%d\n",mpsCount,i);
-	  goodPulserSet=false;
-	}
+        tmpBit = (tmpBit<<1)|(theFADCdata->GetSumsPulserSynch(0,i)&&0x1);
+        if(indexPulser==0 &&(!theFADCdata->GetSumsPulserSynch(0,i))){
+          printf("Error, Missing MM Pulser synch mps=%6d trigger=%d NumTrig %3d\n",
+              //mpsCount,i,numTriggersAccepted);
+              theStatus->GetMPSCoda(),i,numTriggersAccepted);
+          std::cout << "i: " << i << ", tmpBit: ";
+          for(int bitI = 31; bitI >= 0; bitI--) {
+            if(bitI%8 == 7)
+              std::cout << " ";
+            std::cout << ((tmpBit>>bitI)&0x1);
+          }
+          std::cout << ", " << theFADCdata->GetSumsPulserSynch(0,i) << endl;
+          goodPulserSet=false;
+        }
+        if(indexPulser!=0 &&( theFADCdata->GetSumsPulserSynch(0,i))){
+          //printf("Error,   Out of place MM Pulser synch mps=%6d trigger=%d\n",mpsCount,i);
+          printf("Error,   Out of place MM Pulser synch mps=%6d trigger=%d\n",theStatus->GetMPSCoda(),i);
+          goodPulserSet=false;
+        }
 
-	indexPulser++;
-	if(indexPulser>3)indexPulser=0;
+        indexPulser++;
+        if(indexPulser>3)indexPulser=0;
       }
       if(goodPulserSet){
-	//output good sets to Tree (ignore first mps data)
-	indexPulser=0;
-	for(int i=synchIndex; i<numTriggersAccepted-1; i++){
-    if(calculatePed) {
-      sumPedestal = numInSum*
-        (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
-    }
-	  MMpulse[indexPulser ]=
-	    sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;
-	  if(indexPulser==3 &&mpsCount>0){
-	    pulserWiseTree->Fill();
-	  }
-	  indexPulser++;
-	  if(indexPulser>3)indexPulser=0;
-	}
+        //output good sets to Tree (ignore first mps data)
+        indexPulser=0;
+        MMSynchIndexClock = theFADCdata->GetSumsClock(chan,synchIndex);
+        for(int i=synchIndex; i<numTriggersAccepted-1; i++){
+          if(calculatePed) {
+            sumPedestal = numInSum*
+              (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
+          }
+          MMpulse[indexPulser ]=
+            sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;
+          if(indexPulser==3 &&mpsCount>0){
+            pulserWiseTree->Fill();
+          }
+          indexPulser++;
+          if(indexPulser>3)indexPulser=0;
+        }
       // } else {
       // 	//debug MPS data with bad syncs
       // 	int sum;
@@ -310,6 +325,13 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
       // 	  clockLast=triggerClock;
       // 	}
       }
+    }
+    // Now store the randoms
+    sumIsRandom = true;
+    for(int i=0; i<numRandomsAccepted; i++){
+      sumPedestal = numInSum*(theFADCdata->GetRandomPreSums(chan,i)/double(numInPedSum));
+      sumVal = sumSign*theFADCdata->GetRandomSums(chan,i)+sumPedestal;
+      triggerWiseTree->Fill();
     }
   }else{
     printf("Invalid Summed Triggered Data\n");
@@ -380,7 +402,7 @@ int fadcTriggered::DoSampledWaveforms(fadcdata *theFADCdata){
       bits=Pulse.UserBits;
       snapshotClock=Pulse.Clock;  //3/14/2016  gbf
       data=Pulse.Data;
-      for(int i=0; i<NumSamples; i++){
+      for(int i=0; i<NumSamples&&i<1002; i++){
  	snapshot[i]=data[i];
 	hTrig_wf->Fill(i,data[i]);  //use weighted fill
       }
