@@ -61,6 +61,7 @@ public:
    virtual ~THaEpics() {}
 // Get tagged value nearest 'event'
    Double_t GetData (const char* tag, int event=0) const;
+   std::string GetLastReadDate() { return lastReadDate; };
 // Get tagged string value nearest 'event'
    std::string GetString (const char* tag, int event=0) const;
    Double_t GetTimeStamp(const char* tag, int event=0) const;
@@ -74,6 +75,7 @@ private:
    std::map< std::string, std::vector<EpicsChan> > epicsData;
    std::vector<EpicsChan> GetChan(const char *tag) const;
    Int_t FindEvent(const std::vector<EpicsChan> ep, int event) const;
+   std::string lastReadDate;
 
 
 };
