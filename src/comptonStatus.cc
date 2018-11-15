@@ -113,6 +113,7 @@ int comptonStatus::DefineEpicsBranches(TTree* mytree){
   mytree->Branch("epics_Thermo1",&epics_Thermo1,"epics_Thermo1/F");
   mytree->Branch("epics_Thermo2",&epics_Thermo2,"epics_Thermo2/F");
   mytree->Branch("epics_TimeStamp",&epics_TimeStamp,"epics_TimeStamp/F");
+  mytree->Branch("epics_datestring",&epics_datestring);
 
   return 0;
 }
@@ -617,6 +618,7 @@ void comptonStatus::SetEpicsDefaults(){
   epics_Thermo1=defValue;
   epics_Thermo2=defValue;
   epics_TimeStamp=0;
+  epics_datestring="";
  return;
 }
 
@@ -662,7 +664,8 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 	
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T1",&epics_Thermo1);
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T2",&epics_Thermo2);
-	epics_TimeStamp = epics->GetTimeStamp("HaComptonSIM900_P2T1");
+	epics_TimeStamp = epics->GetTimeStamp("hac_bcm_average");
+	epics_datestring = epics->GetLastReadDate();
 
         if (epics->IsLoaded("IGL1I00OD16_16")){
           spol = epics->GetString("IGL1I00OD16_16");

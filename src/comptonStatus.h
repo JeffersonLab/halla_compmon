@@ -51,6 +51,7 @@ class comptonStatus {
   // data extraction functions
   void DebugDump(int mode);
   int GetCountMPS(){ return countMPS;};
+  int GetMPSCoda(){ return mpsCoda;};
   int GetLaserState(){ return currentLaserState;};
   TString DecodeLaserState(int laserState);
   //
@@ -292,6 +293,7 @@ class comptonStatus {
     float epics_Thermo1;
     float epics_Thermo2;
     float epics_TimeStamp;
+    std::string epics_datestring;
 
     float epics_coda_deadtime;	// ratio of mps to l1a
     int epics_wein_right;
