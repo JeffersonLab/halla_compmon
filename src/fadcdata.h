@@ -34,6 +34,7 @@ class fadcdata {
     int SamplesPerEvent[MAX_FADC_CHANNELS];
     int samplepointer[MAX_FADC_CHANNELS];
     int  UnpackedClock[MAX_FADC_CHANNELS][MAX_FADC_EVENTS];
+    float mpsPedestal;
     double mpsTriggerPedestal;
     double mpsRandomPedestal;
     double mpsPedestal;
