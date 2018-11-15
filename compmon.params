@@ -231,8 +231,9 @@ TRANSITION = 2883 ; Start of Fall 2016 running (with DAQ tests)
 ped_value = 3846.5
 
 TRANSITION = 2921
-cavity_calibration=0.25
-cavity_power_pedestal=250
+use_BPMSumCuts=0 ; Stop using BPM to figure out if the beam is on or not
+cavity_calibration=0.05
+cavity_power_pedestal=200
 cavity_power_off_max = 20
 cavity_power_on_min=1800.0
 beam_on_min = 4 ;
@@ -244,10 +245,16 @@ use_clock_normalization=1320209; When set to zero, the clockIP is used
 BCM_calibration = 0.00035397
 BCM_pedestal = 0.36281925;
 
+TRANSITION = 2924
+ped_value=3835.23
+
 TRANSITION = 2929
 cavity_power_off_max=600
 cavity_power_on_min=4450
-ped_value=3834.95
+ped_value=3835.12
+
+TRANSITION = 2935
+ped_value=3846.2
 
 TRANSITION=2949
 use_BPMSumCuts=0 ; Stop using BPM to figure out if the beam is on or not
@@ -255,14 +262,38 @@ cavity_calibration=0.065
 cavity_power_pedestal=261
 cavity_power_off_max = 20
 cavity_power_on_min=941.0
-BCM_calibration=0.0025 ; Just some junk calibration because I know these runs have beam OFF
+;BCM_calibration=0.0025 ; Just some junk calibration because I know these runs have beam OFF
 beam_on_min=4
-BCM_pedestal = 2.456
+;BCM_pedestal = 2.456
 beam_off_max=0.25
 
+TRANSITION = 2956
+ped_value=3833.6
+
+TRANSITION = 2958
+ped_value=3845.9
+
+TRANSITION = 2959
+ped_value=3845
+
+TRANSITION = 2960
+ped_value=3844
+
+TRANSITION = 2961
+ped_value=3845.9
+
+TRANSITION = 2972
+cavity_power_on_min=825
+
+TRANSITION = 2973
+cavity_power_on_min=941
 
 TRANSITION=2974
 ped_value=3846.2
 
 TRANSITION=3054
 cavity_power_on_min=1800.0
+
+
+TRANSITION=3113
+ped_value=0
