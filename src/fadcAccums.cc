@@ -296,7 +296,11 @@ int fadcAccums::DefineTree(){
   mpsWiseTree->Branch("Acc6",&accsig[6]);
   mpsWiseTree->Branch("Acc7",&accsig[7]);
   mpsWiseTree->Branch("NAcc0",&naccsig[0]);
+  mpsWiseTree->Branch("NAcc1",&naccsig[1]);
+  mpsWiseTree->Branch("NAcc2",&naccsig[2]);
+  mpsWiseTree->Branch("NAcc3",&naccsig[3]);
   mpsWiseTree->Branch("NAcc4",&naccsig[4]);
+  mpsWiseTree->Branch("NAcc5",&naccsig[5]);
   mpsWiseTree->Branch("mpsPedestal",&mpsPedestal);
   mpsWiseTree->Branch("mpsRandomPedestal",&mpsRandomPedestal);
   mpsWiseTree->Branch("mpsTriggerPedestal",&mpsTriggerPedestal);
@@ -350,6 +354,10 @@ int fadcAccums::DefineTree(){
   quartetWiseTree->Branch("epics_quartetBCM",&epics_quartetBCM);
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(quartetWiseTree);
+
+  // Add quartet wise bcm info
+  quartetWiseTree->Branch("PosHelBCM",&beamPosQuad);
+  quartetWiseTree->Branch("NegHelBCM",&beamNegQuad);
 
   return 0;
 }
