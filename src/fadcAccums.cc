@@ -20,20 +20,31 @@ fadcAccums::fadcAccums(textParams* theParamsIn, comptonStatus* theStatusIn){
 void fadcAccums::newRun(){
   channel_calorimeter_PMT=theParams->getInt("channel_calorimeter_PMT");
   ped_value=theParams->getFloat("ped_value");
-  lastSubQuad=-1;    //last subquad record not yet defined
+  lastSubMult=-1;    //last submult record not yet defined
   prevLaserStateEncountered=-1;  //last Laser State not yet defined
   laserStateBeingSummed=-1;
-  laserStateThisQuad=LASER_UNKNOWN;  //used within 1 Quad 
-  quartetValid=false;  //used to check 4 consecutive helicity windows 
-  quartetStable=false;
-  countQuadsLaserPeriod=0;
+  laserStateThisMult=LASER_UNKNOWN;  //used within 1 Mult 
+  multipletValid=false;  //used to check 4 consecutive helicity windows 
+  multipletStable=false;
+  countMultsLaserPeriod=0;
   pointerHistory=0;      //initialize pointer
   for(int i=0; i<NUM_ACCUM_TYPES; i++){
     accSumLastLaserOff[i]=-1.e9;  //keeps last laser-off data
   }
   for(int i=0; i<NUM_HISTORY_LASER_PERIODS; i++){
-    countQuadsHistory[i]=0;  //zero out numer of quads summed into each history period
+    countMultsHistory[i]=0;  //zero out numer of mults summed into each history period
   }
+  helicityStructure = theStatus->GetHelicityStructure();
+  if(helicityStructure == 2) {
+    sprintf(multipletName,"Pair");
+  } else if  (helicityStructure == 4) {
+    sprintf(multipletName,"Quartet");
+  } else if  (helicityStructure == 8) {
+    sprintf(multipletName,"Octet");
+  } else {
+    sprintf(multipletName,"Unsupported-Helicity-Pattern");
+  }
+  comptonTree->SetHelStructure(helicityStructure);
   return;
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -53,7 +64,7 @@ int fadcAccums::DefineHistos() {
   TString title;
   TDirectory *topdir= gDirectory;
   TDirectory *mpsHistos=topdir->mkdir("mpsHistos");
-  TDirectory *quartetHistos=topdir->mkdir("quartetHistos");
+  TDirectory *multipletHistos=topdir->mkdir("quartetHistos");
   TDirectory *laserCycleHistos=topdir->mkdir("laserCycleHistos");
   mpsHistos->cd();
   //
@@ -143,46 +154,46 @@ int fadcAccums::DefineHistos() {
     hM_acc_laserOff[accum]=new TH1F(label,title,
 				    25000,sumMin,sumMax);
   }
-  //quartet  histos
+  //multiplet  histos
   //Acc 0 Beam-off histos
-  quartetHistos->cd();
+  multipletHistos->cd();
   hQ_aligned0_beamOff=new TH1F("hQ_aligned0_beamOff",
-			       "Acc0 Quad Spin Aligned Beam Off",
+			       "Acc0 Mult Spin Aligned Beam Off",
 			       1000,sumMin,sumMax);
   hQ_anti0_beamOff=new TH1F("hQ_anti0_beamOff",
-			       "Acc0 Quad Spin Anti-aligned Beam Off",
+			       "Acc0 Mult Spin Anti-aligned Beam Off",
 			       1000,sumMin,sumMax);
 
-  hQ_sum0_beamOff=new TH1F("hQ_sum0_beamOff","Acc0 Quad Sum Beam Off",
+  hQ_sum0_beamOff=new TH1F("hQ_sum0_beamOff","Acc0 Mult Sum Beam Off",
 		       1000,sumMin,sumMax);
-  hQ_diff0_beamOff=new TH1F("hQ_diff0_beamOff","Acc0 Quad Diff Beam Off",
+  hQ_diff0_beamOff=new TH1F("hQ_diff0_beamOff","Acc0 Mult Diff Beam Off",
 			    1000,-diffMax,diffMax);
   hQ_Asym0_raw_beamOff=new TH1F("hQ_Asym0_raw_beamOff",
 				     "Acc0 Raw Asym BeamOff",
 				1000,-0.3,0.3);
-  //quartet  histos (Beam On)
+  //multiplet  histos (Beam On)
   //accumulator 0
   hQ_aligned0_laserOff=new TH1F("hQ_aligned0_laserOff",
-			       "Acc0 Quad Spin Aligned Laser Off",
+			       "Acc0 Mult Spin Aligned Laser Off",
 			       1000,sumMin,sumMax);
   hQ_anti0_laserOff=new TH1F("hQ_anti0_laserOff",
-			       "Acc0 Quad Spin Anti Aligned Laser Off",
+			       "Acc0 Mult Spin Anti Aligned Laser Off",
 			       1000,sumMin,sumMax);
 
   hQ_aligned0_laserOn=new TH1F("hQ_aligned0_laserOn",
-			       "Acc0 Quad Spin Anti-aligned laser On",
+			       "Acc0 Mult Spin Anti-aligned laser On",
 			       1000,sumMin,sumMax);
   hQ_anti0_laserOn=new TH1F("hQ_anti0_laserOn",
-			       "Acc0 Quad Spin Anti-aligned laser On",
+			       "Acc0 Mult Spin Anti-aligned laser On",
 			       1000,sumMin,sumMax);
 
-  hQ_sum0_laserLeft=new TH1F("hQ_sum0_laserLeft","Acc0 Quad Sum laser left",
+  hQ_sum0_laserLeft=new TH1F("hQ_sum0_laserLeft","Acc0 Mult Sum laser left",
 		       1000,sumMin,sumMax);
-  hQ_sum0_laserOff=new TH1F("hQ_sum0_laserOff","Acc0 Quad Sum laser Off",
+  hQ_sum0_laserOff=new TH1F("hQ_sum0_laserOff","Acc0 Mult Sum laser Off",
 		       1000,sumMin,sumMax);
-  hQ_diff0_laserLeft=new TH1F("hQ_diff0_laserLeft","Acc0 Quad Diff laser Left",
+  hQ_diff0_laserLeft=new TH1F("hQ_diff0_laserLeft","Acc0 Mult Diff laser Left",
 		       1000,-diffMax,diffMax);
-  hQ_diff0_laserOff=new TH1F("hQ_diff0_laserOff","Acc0 Quad Diff Laser Off",
+  hQ_diff0_laserOff=new TH1F("hQ_diff0_laserOff","Acc0 Mult Diff Laser Off",
 		       1000,-diffMax,diffMax);
   hQ_Asym0_raw_laserLeft=new TH1F("hQ_Asym0_raw_laserLeft",
 				     "Acc0 Raw Asym Laser Left",
@@ -199,17 +210,17 @@ int fadcAccums::DefineHistos() {
   float diffMax4=0.2*diffMax;
   float sumMin4=0.01*sumMin;
   float sumMax4=0.01*sumMax;
-  hQ_sum4_beamOff=new TH1F("hQ_sum4_beamOff","Acc4 Quad Sum laser left",
+  hQ_sum4_beamOff=new TH1F("hQ_sum4_beamOff","Acc4 Mult Sum laser left",
 			   1000,sumMin4,sumMax4);
-  hQ_diff4_beamOff=new TH1F("hQ_diff4_beamOff","Acc4 Quad Diff laser Left",
+  hQ_diff4_beamOff=new TH1F("hQ_diff4_beamOff","Acc4 Mult Diff laser Left",
 			    1000,-diffMax4,diffMax4);
-  hQ_sum4_laserLeft=new TH1F("hQ_sum4_laserLeft","Acc4 Quad Sum laser left",
+  hQ_sum4_laserLeft=new TH1F("hQ_sum4_laserLeft","Acc4 Mult Sum laser left",
 			     1000,sumMin4,sumMax4);
-  hQ_sum4_laserOff=new TH1F("hQ_sum4_laserOff","Acc4 Quad Sum laser Off",
+  hQ_sum4_laserOff=new TH1F("hQ_sum4_laserOff","Acc4 Mult Sum laser Off",
 		       1000,sumMin4,sumMax4);
-  hQ_diff4_laserLeft=new TH1F("hQ_diff4_laserLeft","Acc4 Quad Diff laser Left",
+  hQ_diff4_laserLeft=new TH1F("hQ_diff4_laserLeft","Acc4 Mult Diff laser Left",
 		       1000,-diffMax4,diffMax4);
-  hQ_diff4_laserOff=new TH1F("hQ_diff4_laserOff","Acc4 Quad Diff Laser Off",
+  hQ_diff4_laserOff=new TH1F("hQ_diff4_laserOff","Acc4 Mult Diff Laser Off",
 			     1000, -diffMax4,diffMax4);
   hQ_Asym4_raw_laserLeft=new TH1F("hQ_Asym4_raw_laserLeft",
 				     "Acc4 Raw Asym Laser Left",
@@ -238,17 +249,17 @@ int fadcAccums::DefineHistos() {
   laserCycleHistos->cd();
   //laser-wise histos
   hL_sum0_laserLeft=new TH1F("hL_sum0_laserLeft",
-			     "Acc0 LaserPeriod Sum per Quad- Laser left",
+			     "Acc0 LaserPeriod Sum per Mult- Laser left",
 			     1000,sumMin,sumMax);
   hL_diff0_laserLeft=new TH1F("hL_diff0_laserLeft",
-			     "Acc0 LaserPeriod Diff per Quad- Laser left",
+			     "Acc0 LaserPeriod Diff per Mult- Laser left",
 			     1000,-0.1*diffMax,0.1*diffMax);
 
   hL_sum0_laserOff=new TH1F("hL_sum0_laserOff",
-			    "Acc0 LaserPeriod Sum per Quad- Laser Off",
+			    "Acc0 LaserPeriod Sum per Mult- Laser Off",
 			    1000,sumMin,sumMax);
   hL_diff0_laserOff=new TH1F("hL_diff0_laserOff",
-			     "Acc0 LaserPeriod Diff  per Quad- Laser Off",
+			     "Acc0 LaserPeriod Diff  per Mult- Laser Off",
 			     1000,-0.1*diffMax,0.1*diffMax);
 
 
@@ -261,7 +272,7 @@ int fadcAccums::DefineHistos() {
   //
   //Strip Chart style
   mpsHistos->cd();
-  hS_Asym0_raw=new TH2F("hS_Asym0_raw","Acc 0 Quad Asym vs MPS",
+  hS_Asym0_raw=new TH2F("hS_Asym0_raw","Acc 0 Mult Asym vs MPS",
 			1000,0,40000,500,-.1,.1);
   topdir->cd();
   return 0;
@@ -286,78 +297,31 @@ void fadcAccums::labelSpinSortedHistos(TH1F* histo){
 int fadcAccums::DefineTree(){
   // data output to tree for each Compton trigger (summed pulses)
   mpsWiseTree=new TTree("mpswise",
-			"Accumulator data organized by helicity quartets");
-  mpsWiseTree->Branch("Acc0",&accsig[0]);
-  mpsWiseTree->Branch("Acc1",&accsig[1]);
-  mpsWiseTree->Branch("Acc2",&accsig[2]);
-  mpsWiseTree->Branch("Acc3",&accsig[3]);
-  mpsWiseTree->Branch("Acc4",&accsig[4]);
-  mpsWiseTree->Branch("Acc5",&accsig[5]);
-  mpsWiseTree->Branch("Acc6",&accsig[6]);
-  mpsWiseTree->Branch("Acc7",&accsig[7]);
-  mpsWiseTree->Branch("NAcc0",&naccsig[0]);
-  mpsWiseTree->Branch("NAcc1",&naccsig[1]);
-  mpsWiseTree->Branch("NAcc2",&naccsig[2]);
-  mpsWiseTree->Branch("NAcc3",&naccsig[3]);
-  mpsWiseTree->Branch("NAcc4",&naccsig[4]);
-  mpsWiseTree->Branch("NAcc5",&naccsig[5]);
+			"Accumulator data organized by helicity multiplets");
+  multipletWiseTree=new TTree("quartetwise",
+       "Multiplet-summed accumualtor and beam info");
+  comptonTree = new comptonHelTree(mpsWiseTree,multipletWiseTree);
+  for(int a = 0; a < NUM_ACCUM_TYPES; a++) {
+    comptonTree->AddVariable(&(FIXHELaccsig[a]),TString::Format("Acc%d",a),
+      TString::Format("Acc%d",a));
+    comptonTree->AddVariable(&(FIXHELnaccsig[a]),TString::Format("NAcc%d",a),
+      TString::Format("NSamples%d",a));
+  } 
+
   mpsWiseTree->Branch("mpsPedestal",&mpsPedestal);
   mpsWiseTree->Branch("mpsRandomPedestal",&mpsRandomPedestal);
   mpsWiseTree->Branch("mpsTriggerPedestal",&mpsTriggerPedestal);
 
-  //now add on variables from comptonStatus 
-  theStatus->DefineStatusBranches(mpsWiseTree);
-  //quarter-wise tree
-  quartetWiseTree=new TTree("quartetwise",
-       "Quartet-summed accumualtor and beam info");
-  quartetWiseTree->Branch("PosHelAcc0",&accPosQuad[0]);
-  quartetWiseTree->Branch("PosHelAcc1",&accPosQuad[1]);
-  quartetWiseTree->Branch("PosHelAcc2",&accPosQuad[2]);
-  quartetWiseTree->Branch("PosHelAcc3",&accPosQuad[3]);
-  quartetWiseTree->Branch("PosHelAcc4",&accPosQuad[4]);
-  quartetWiseTree->Branch("PosHelAcc5",&accPosQuad[5]);
-  quartetWiseTree->Branch("PosHelAcc6",&accPosQuad[6]);
-  quartetWiseTree->Branch("PosHelAcc7",&accPosQuad[7]);
-  //
-  quartetWiseTree->Branch("PosHelNSamples0",&naccPosQuad[0]);
-  quartetWiseTree->Branch("PosHelNSamples1",&naccPosQuad[1]);
-  quartetWiseTree->Branch("PosHelNSamples2",&naccPosQuad[2]);
-  quartetWiseTree->Branch("PosHelNSamples3",&naccPosQuad[3]);
-  quartetWiseTree->Branch("PosHelNSamples4",&naccPosQuad[4]);
-  quartetWiseTree->Branch("PosHelNSamples5",&naccPosQuad[5]);
-  quartetWiseTree->Branch("PosHelNSamples6",&naccPosQuad[6]);
-  quartetWiseTree->Branch("PosHelNSamples7",&naccPosQuad[7]);
-  //
+  //multiplet-wise tree
+  multipletWiseTree->Branch("multipletHelicityPattern",&multipletHelicity,
+			  "multipletHelicityPattern/I");
+  multipletWiseTree->Branch("multipletReportedHelicityPattern",&multipletReportedHelicity,
+			  "multipletReportedHelicityPattern/I");
+  multipletWiseTree->Branch("firstMPSnumber",&firstMPS,"firstMPSnumber/I");
+  multipletWiseTree->Branch("epics_multipletBCM",&epics_multipletBCM);
 
-  quartetWiseTree->Branch("NegHelAcc0",&accNegQuad[0]);
-  quartetWiseTree->Branch("NegHelAcc1",&accNegQuad[1]);
-  quartetWiseTree->Branch("NegHelAcc2",&accNegQuad[2]);
-  quartetWiseTree->Branch("NegHelAcc3",&accNegQuad[3]);
-  quartetWiseTree->Branch("NegHelAcc4",&accNegQuad[4]);
-  quartetWiseTree->Branch("NegHelAcc5",&accNegQuad[5]);
-  quartetWiseTree->Branch("NegHelAcc6",&accNegQuad[6]);
-  quartetWiseTree->Branch("NegHelAcc7",&accNegQuad[7]);
-  //
-  quartetWiseTree->Branch("NegHelNSamples0",&naccNegQuad[0]);
-  quartetWiseTree->Branch("NegHelNSamples1",&naccNegQuad[1]);
-  quartetWiseTree->Branch("NegHelNSamples2",&naccNegQuad[2]);
-  quartetWiseTree->Branch("NegHelNSamples3",&naccNegQuad[3]);
-  quartetWiseTree->Branch("NegHelNSamples4",&naccNegQuad[4]);
-  quartetWiseTree->Branch("NegHelNSamples5",&naccNegQuad[5]);
-  quartetWiseTree->Branch("NegHelNSamples6",&naccNegQuad[6]);
-  quartetWiseTree->Branch("NegHelNSamples7",&naccNegQuad[7]);
-  //
 
-  quartetWiseTree->Branch("quartetHelicityPattern",&quartetHelicity,
-			  "quartetHelicityPattern/I");
-  quartetWiseTree->Branch("firstMPSnumber",&firstMPS,"firstMPSnumber/I");
-  quartetWiseTree->Branch("epics_quartetBCM",&epics_quartetBCM);
-  //now add on variables from comptonStatus 
-  theStatus->DefineStatusBranches(quartetWiseTree);
-
-  // Add quartet wise bcm info
-  quartetWiseTree->Branch("PosHelBCM",&beamPosQuad);
-  quartetWiseTree->Branch("NegHelBCM",&beamNegQuad);
+  theStatus->DefineStatusBranches(comptonTree);
 
   return 0;
 }
@@ -430,17 +394,17 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
     mpsTriggerPedestal = theFADCdata->GetMPSTriggerPedestal();
     for(int accum=0; accum<8; accum++){
       IntegratedPed =ped*nacc[accum];
-      accsig[accum]=IntegratedPed -accraw[accum];
-      naccsig[accum]=nacc[accum];
+      FIXHELaccsig[accum].mpsval=IntegratedPed -accraw[accum];
+      FIXHELnaccsig[accum].mpsval=nacc[accum];
     }
 
     float tmp;
-    hM_acc0_everything->Fill(accsig[0]);
+    hM_acc0_everything->Fill(FIXHELaccsig[0].mpsval);
     //Fill most histograms only if "BeamOn"
     if(beamOn){
       for(int accum=0; accum<8; accum++){
-	hM_acc_All[accum]->Fill(accsig[accum]);
-	tmp=accsig[accum];   //Pedestal correct accum divided byh bcm
+	hM_acc_All[accum]->Fill(FIXHELaccsig[accum].mpsval);
+	tmp=FIXHELaccsig[accum].mpsval;   //Pedestal correct accum divided byh bcm
 	if(laserState==LASER_RIGHT || laserState==LASER_LEFT){
 	  hM_acc_laserOn[accum]->Fill(tmp);
 	}else if(laserState==LASER_RIGHTOFF || laserState==LASER_LEFTOFF){
@@ -450,11 +414,11 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
     }
     if(beamOn){
       if(laserState==LASER_RIGHT || laserState==LASER_LEFT){
-	hM_acc0_beamOff_LaserOn->Fill(accsig[0]);
-	hM_acc4_beamOff_LaserOn->Fill(accsig[4]);
+	hM_acc0_beamOff_LaserOn->Fill(FIXHELaccsig[0].mpsval);
+	hM_acc4_beamOff_LaserOn->Fill(FIXHELaccsig[4].mpsval);
       }else if(laserState==LASER_RIGHTOFF || laserState==LASER_LEFTOFF){
-	hM_acc0_beamOff_laserOff->Fill(accsig[0]);
-	hM_acc4_beamOff_laserOff->Fill(accsig[4]);
+	hM_acc0_beamOff_laserOff->Fill(FIXHELaccsig[0].mpsval);
+	hM_acc4_beamOff_laserOff->Fill(FIXHELaccsig[4].mpsval);
       }  
     }
     //if(theStatus->GetBeamState()==BEAM_ON)mpsWiseTree->Fill();
@@ -464,142 +428,148 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
   return 0;
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-int fadcAccums::BuildQuad(){
-  //called for each MPS (subquad)
+int fadcAccums::BuildMultiplet(){
+  //called for each MPS (submult)
   // wrapup==0 for handeling of normal MPS event
   // wrapup==1 to force booking of last laser-period.
-  //it builds up the data for one quad
-  // valid quads must have stable beam  (all subquads on or all subquads off,etc.)
-  // after processing 4th subquad, data is LaserPeriod summation variables
+  //it builds up the data for one mult
+  // valid mults must have stable beam  (all submults on or all submults off,etc.)
+  // after processing last submult, data is LaserPeriod summation variables
   //  LaserPeriod summation variables are stored when a laser transition is detected
   // by the member function DoLaserTransitin and summation variables are cleared
   //
   if(   !(theStatus->IsHelicityValid() &&theStatus->IsHelicitySynchValid()) ){
-    quartetValid=false;
-    quartetStable=false;
+    multipletValid=false;
+    multipletStable=false;
     return -1;
   }
-  int subquad=theStatus->GetIndexQuartet();
+  int submult = -1;
+  int endmult = helicityStructure-1;
+  if(helicityStructure==2) {
+  } else if (helicityStructure==4) {
+    submult = theStatus->GetIndexQuartet();
+  } else if (helicityStructure==8) {
+    submult = theStatus->GetIndexOctet();
+  } else {
+    assert(1==2);
+  }
   int helicity=theStatus->GetHelicityState();
+  int reportedHelicity = theStatus->GetCurrentHelicityBit();
   int laserState=theStatus->GetLaserState();
   int beamState=theStatus->GetBeamState();
   float bcm=theStatus->GetCalibratedBCM();
   int MPS=theStatus->GetCountMPS();
   /*
-  printf("DEBUG BuildQuad  subquad=%8d\n",subquad);
+  printf("DEBUG BuildMult  submult=%8d\n",submult);
   printf("                helicity=%8d\n",helicity);
   printf("              laserState=%8d\n",laserState);
   printf("               beamState=%8d\n",beamState);
   */
   //printf("DEBUG MPS:index  helicity currentBit %5d %d %d  %d\n",
-  //	 MPS,subquad, helicity, theStatus->GetCurrentHelicityBit());
-  if(0==subquad){
-    //quartetValid and quartetStable used to verify legal quartet pattern
-    // and all 4 MPSs are same beam state and laser state
-    quartetValid=true;
-    quartetStable=true;
-    quartetHelicity=helicity;  //set lower bit 
+  //	 MPS,submult, helicity, theStatus->GetCurrentHelicityBit());
+  if(0==submult){
+    //multipletValid and multipletStable used to verify legal multiplet pattern
+    // and all 'N' MPSs are same beam state and laser state
+    multipletValid=true;
+    multipletStable=true;
+    multipletHelicity=helicity;  //set lower bit 
+    multipletReportedHelicity=reportedHelicity;
     firstMPS=MPS;
-    lastSubQuad=-1;
-    laserStateThisQuad=laserState;
-    beamStateThisQuad=beamState;
-    beamPosQuad=0.;    //start by clearing summing variables if first subquad
-    beamNegQuad=0.;
-    epics_quartetBCM=0.;
+    lastSubMult=-1;
+    laserStateThisMult=laserState;
+    beamStateThisMult=beamState;
+    epics_multipletBCM=0.;
     countPosMinNeg=0;  //count number # helicity windows minus # negative
-    for(int i=0; i<NUM_ACCUM_TYPES; i++){
-      accPosQuad[i]=0.;   //summing signals
-      accNegQuad[i]=0.;
-      naccPosQuad[i]=0.;  //summing number of samples in FADC accumuator
-      naccNegQuad[i]=0.;
-    }
+    comptonTree->ClearMultiplet();
   } else {
-    quartetHelicity=quartetHelicity<<4;
-    quartetHelicity+=helicity;
+    multipletHelicity=multipletHelicity<<helicityStructure;
+    multipletHelicity+=helicity;
+    multipletReportedHelicity=multipletReportedHelicity<<helicityStructure;
+    multipletReportedHelicity+=reportedHelicity;
   }
-  //  if(subquad==3) printf("MPS %8d Helicity pattern %08x \n",firstMPS,quadHelicity);
+  //  if(submult==3) printf("MPS %8d Helicity pattern %08x \n",firstMPS,multHelicity);
   if(helicity!=0 && helicity!=1){
-    quartetValid=false;
+    multipletValid=false;
   }
   //
-  // check each subquad to assure valid quartet
-  if(subquad!=lastSubQuad+1) {
-    quartetValid=false;
+  // check each submult to assure valid multiplet
+  if(submult!=lastSubMult+1) {
+    multipletValid=false;
   }
-  if(laserState!=laserStateThisQuad){  //all MPSs must be same laser state
-    quartetStable=false;
+  if(laserState!=laserStateThisMult){  //all MPSs must be same laser state
+    multipletStable=false;
   }
-  if(beamState!=beamStateThisQuad){
-    quartetStable=false;
+  if(beamState!=beamStateThisMult){
+    multipletStable=false;
   }
   //
-  //Now start summing the subquartets
-  // BCM is divided by 4 to get average BCM
-  epics_quartetBCM+= 0.25*(theStatus->GetEpicsBCMAverage());
+  //Now start summing the submultiplets
+  // BCM is divided by helicityStructure to get average BCM
+  epics_multipletBCM+=(theStatus->GetEpicsBCMAverage())/float(helicityStructure);
+  comptonTree->ProcessHelicity(helicity);
   if(helicity==1){
-    beamPosQuad+=bcm;
-    countPosMinNeg++;
-    for(int i=0; i<NUM_ACCUM_TYPES; i++){
-      accPosQuad[i]+=accsig[i];  //sum up the 2 positive helicity subquads
-      naccPosQuad[i]+=nacc[i];  //sum up corresponding # samples
-    }
+    beamPosMult+=bcm;
   }else{
-    beamNegQuad+=bcm;
-    countPosMinNeg+=-1;
-    for(int i=0; i<NUM_ACCUM_TYPES; i++){
-      accNegQuad[i]+=accsig[i];
-      naccNegQuad[i]+=nacc[i];
-    }
+    beamNegMult+=bcm;
   }
   //
-  // If we've summed an entire valid quad, sum it into the laser period stuff
+  // If we've summed an entire valid mult, sum it into the laser period stuff
   //
-  if(3==subquad){
-    if(countPosMinNeg!=0){
-      printf("Helicity Quartet Error-Unbalanced helicity sets= %d  MPS= %d\n",
-	     countPosMinNeg,MPS);
-      quartetValid=false;
+  if(endmult==submult){
+    // Reached the end of a multiplet
+    comptonTree->ProcessFullMult();
+    int mstat = comptonTree->MultStatus();
+    if(mstat != comptonHelTree::kMultOK) {
+      printf("Heliciy Quarter Error MPS=%10d",MPS);
+      if(mstat&comptonHelTree::kMultUnbalanced) {
+        printf(" Unbalanced helicity sets plus/minus: %2d/%2d",comptonTree->CountHel(HELPLUS),comptonTree->CountHel(HELMINUS));
+      }
+      if(mstat&comptonHelTree::kMultBadCount) {
+        printf(" Bad count: %d",comptonTree->CountHel(HELPLUS)+comptonTree->CountHel(HELMINUS));
+      }
+      printf("\n");
+      multipletValid=false;
     }
   }
-  if( !quartetValid){
+  if( !multipletValid){
     printf("Invalid Quartet MPS= %d\n",MPS);
   }
-  if(3==subquad && quartetValid ) {
-    //valid quads get to here
-    if(laserStateThisQuad==laserStateBeingSummed &&beamState==beamStateBeingSummed){
-      //quads we want to include in summation get to here
+  if(endmult==submult && multipletValid ) {
+    //valid mults get to here
+    if(laserStateThisMult==laserStateBeingSummed &&beamState==beamStateBeingSummed){
+      //mults we want to include in summation get to here
       for(int i=0; i<NUM_ACCUM_TYPES; i++){
-	accPosLaserPeriod[i]+=accPosQuad[i];
-	accNegLaserPeriod[i]+=accNegQuad[i];
+	accPosLaserPeriod[i]+=accPosMult[i];
+	accNegLaserPeriod[i]+=accNegMult[i];
       }
-      countQuadsLaserPeriod++;
-      beamPosLaserPeriod+=beamPosQuad;
-      beamNegLaserPeriod+=beamNegQuad;
+      countMultsLaserPeriod++;
+      beamPosLaserPeriod+=beamPosMult;
+      beamNegLaserPeriod+=beamNegMult;
     }
   }
-  lastSubQuad=subquad;
+  lastSubMult=submult;
   //
-  //now fill quad-wise histograms
+  //now fill mult-wise histograms
   //
   double diff,sum,background,signal;
-  if(3==subquad && quartetValid && quartetStable &&beamState==BEAM_ON) {
+  if(endmult==submult && multipletValid && multipletStable &&beamState==BEAM_ON) {
     //Accumulator 0 histograms
       if(laserState==LASER_LEFT){
-	hQ_aligned0_laserOn->Fill(accPosQuad[0]);
-	hQ_anti0_laserOn->Fill(accNegQuad[0]);
+	hQ_aligned0_laserOn->Fill(accPosMult[0]);
+	hQ_anti0_laserOn->Fill(accNegMult[0]);
       }else if(laserState==LASER_RIGHT){
-	hQ_aligned0_laserOn->Fill(accNegQuad[0]);
-	hQ_anti0_laserOn->Fill(accPosQuad[0]);
+	hQ_aligned0_laserOn->Fill(accNegMult[0]);
+	hQ_anti0_laserOn->Fill(accPosMult[0]);
       }else if(laserState==LASER_LEFTOFF){
-	hQ_aligned0_laserOff->Fill(accPosQuad[0]);
-	hQ_anti0_laserOff->Fill(accNegQuad[0]);
+	hQ_aligned0_laserOff->Fill(accPosMult[0]);
+	hQ_anti0_laserOff->Fill(accNegMult[0]);
       }else if(laserState==LASER_RIGHTOFF){
-	hQ_aligned0_laserOff->Fill(accNegQuad[0]);
-	hQ_anti0_laserOff->Fill(accPosQuad[0]);
+	hQ_aligned0_laserOff->Fill(accNegMult[0]);
+	hQ_anti0_laserOff->Fill(accPosMult[0]);
       }
-      diff=accPosQuad[0]-accNegQuad[0];
-      sum=accPosQuad[0]+accNegQuad[0];
-      background=accSumLastLaserOff[0]*(beamPosQuad+beamNegQuad);
+      diff=accPosMult[0]-accNegMult[0];
+      sum=accPosMult[0]+accNegMult[0];
+      background=accSumLastLaserOff[0]*(beamPosMult+beamNegMult);
       signal=sum-background;
       if(laserState==LASER_LEFT){
 	//Laser On Left Polarition Histograms
@@ -622,9 +592,9 @@ int fadcAccums::BuildQuad(){
 	}
       }
     //Accumulator 4 histograms
-      diff=accPosQuad[4]-accNegQuad[4];
-      sum=accPosQuad[4]+accNegQuad[4];
-      background=accSumLastLaserOff[4]*(beamPosQuad+beamNegQuad);
+      diff=accPosMult[4]-accNegMult[4];
+      sum=accPosMult[4]+accNegMult[4];
+      background=accSumLastLaserOff[4]*(beamPosMult+beamNegMult);
       signal=sum-background;
       if(laserState==LASER_LEFT){
 	hQ_sum4_laserLeft->Fill(sum);
@@ -648,41 +618,41 @@ int fadcAccums::BuildQuad(){
     }
   }
   //Beam charge histos
-  if(3==subquad && quartetValid && quartetStable && beamState==BEAM_ON){
+  if(endmult==submult && multipletValid && multipletStable && beamState==BEAM_ON){
     if(laserState==LASER_RIGHT || laserState==LASER_LEFT) {
-      diff=beamPosQuad-beamNegQuad;
-      sum=beamPosQuad+beamNegQuad;;
+      diff=beamPosMult-beamNegMult;
+      sum=beamPosMult+beamNegMult;;
       if(sum>1.0E-5) hQ_BCM_Asym->Fill(diff/sum);
-      hQ_BCM_laserOn_P->Fill(beamPosQuad);
-      hQ_BCM_laserOn_N->Fill(beamNegQuad);
+      hQ_BCM_laserOn_P->Fill(beamPosMult);
+      hQ_BCM_laserOn_N->Fill(beamNegMult);
     }else if(laserState==LASER_RIGHTOFF || laserState==LASER_LEFTOFF){
-      hQ_BCM_laserOff_P->Fill(beamPosQuad);
-      hQ_BCM_laserOff_N->Fill(beamNegQuad);
+      hQ_BCM_laserOff_P->Fill(beamPosMult);
+      hQ_BCM_laserOff_N->Fill(beamNegMult);
     }
   }
 
   //Beam Off Accumulator Histograms
-  if(3==subquad && quartetValid &&quartetStable  && beamState==BEAM_OFF) {
+  if(endmult==submult && multipletValid &&multipletStable  && beamState==BEAM_OFF) {
     //Accumulator 0 histograms
     if(laserState==LASER_LEFT || laserState==LASER_LEFTOFF){
-      hQ_aligned0_beamOff->Fill(accPosQuad[0]);
-      hQ_anti0_beamOff->Fill(accNegQuad[0]);
+      hQ_aligned0_beamOff->Fill(accPosMult[0]);
+      hQ_anti0_beamOff->Fill(accNegMult[0]);
     }else if(laserState==LASER_RIGHT  || laserState==LASER_RIGHTOFF){
-      hQ_aligned0_beamOff->Fill(accNegQuad[0]);
-      hQ_anti0_beamOff->Fill(accPosQuad[0]);
+      hQ_aligned0_beamOff->Fill(accNegMult[0]);
+      hQ_anti0_beamOff->Fill(accPosMult[0]);
     }
-    diff=accPosQuad[0]-accNegQuad[0];
-    sum=accPosQuad[0]+accNegQuad[0];
+    diff=accPosMult[0]-accNegMult[0];
+    sum=accPosMult[0]+accNegMult[0];
     hQ_sum0_beamOff->Fill(sum);
     hQ_diff0_beamOff->Fill(diff);
     if(sum>1.0E-5)  hQ_Asym0_raw_beamOff->Fill(diff/sum);
-    diff=accPosQuad[4]-accNegQuad[4];
-    sum=accPosQuad[4]+accNegQuad[4];
+    diff=accPosMult[4]-accNegMult[4];
+    sum=accPosMult[4]+accNegMult[4];
     hQ_sum4_beamOff->Fill(sum);
     hQ_diff4_beamOff->Fill(diff);
   }
-  if(3==subquad && quartetValid && quartetStable) {
-    quartetWiseTree->Fill();
+  if(endmult==submult && multipletValid && multipletStable) {
+    multipletWiseTree->Fill();
   }
   return 0;
 }
@@ -704,9 +674,9 @@ int fadcAccums::DoLaserTransition(int wrapup){
   }
   //encountered a new laserState that we want to sum.  Store what we've got
   //from previous laser state
-  if(countQuadsLaserPeriod!=0){
-    //      StoreAccumulatorInfo(laserStateThisQuad, beamStateThisQuad,
-    //		       countQuadsLaserPeriod,
+  if(countMultsLaserPeriod!=0){
+    //      StoreAccumulatorInfo(laserStateThisMult, beamStateThisMult,
+    //		       countMultsLaserPeriod,
     //		       accDiffLaserPeriod,accSumLaserPeriod);
    }  
   //keep laser-off data for background subtraction in next laser on period
@@ -723,17 +693,17 @@ int fadcAccums::DoLaserTransition(int wrapup){
 	bcmLastLaserOff=beamPosLaserPeriod+beamNegLaserPeriod;
 	//	printf("Laser Off backgroundSaved %e\n",accSumLastLaserOff[0]);
       }else{
-	if(countQuadsLaserPeriod>0){
+	if(countMultsLaserPeriod>0){
 	  printf("Warning: bcm=0 for laser period taged as BEAM ON \n");
 	}
       }
     }
   }
   //do laser-wise bookkeeping
-  if(countQuadsLaserPeriod!=0){
+  if(countMultsLaserPeriod!=0){
     double diff,sum;
-    sum= (accPosLaserPeriod[0]+accNegLaserPeriod[0])/countQuadsLaserPeriod;
-    diff=(accPosLaserPeriod[0]-accNegLaserPeriod[0])/countQuadsLaserPeriod;;
+    sum= (accPosLaserPeriod[0]+accNegLaserPeriod[0])/countMultsLaserPeriod;
+    diff=(accPosLaserPeriod[0]-accNegLaserPeriod[0])/countMultsLaserPeriod;;
     //    printf(" laser period Acc0 diff %e  sum %e \n", diff, sum);
     if(laserStateBeingSummed==LASER_LEFT){
       hL_sum0_laserLeft->Fill(sum);
@@ -752,47 +722,47 @@ int fadcAccums::DoLaserTransition(int wrapup){
   }
   beamPosLaserPeriod=0.;
   beamNegLaserPeriod=0.;
-  countQuadsLaserPeriod=0;
+  countMultsLaserPeriod=0;
   firstMPS=theStatus->GetCountMPS();  //record start of new laser-off
-  laserStateBeingSummed=laserState;   //start summing these states in BuildQuad
+  laserStateBeingSummed=laserState;   //start summing these states in BuildMult
   beamStateBeingSummed=theStatus->GetBeamState();  //don't sum if  beam status to change
   return 0;
 } 
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 bool fadcAccums::GetSummedAccumulatorRecord(int record,int accumNumber,
 					    int* laserState,  int* beamState,
-					    int* countQuads,
+					    int* countMults,
 					    double* diff, double* sum){
-  //retrieves accumulator info for 1 type of accumulator summed over 1 quad
-  // record =0 for current quad,  record=1 prevous quad, etc.
+  //retrieves accumulator info for 1 type of accumulator summed over 1 mult
+  // record =0 for current mult,  record=1 prevous mult, etc.
   // accumNumber=- for accumulator zero, etc.
   if(record>=0 &&record<NUM_HISTORY_LASER_PERIODS){
     int pointer=pointerHistory-record;
     if (pointer<0) pointer+=NUM_HISTORY_LASER_PERIODS;
     *laserState=laserStateHistory[pointer];
-    *countQuads=countQuadsHistory[pointer];
+    *countMults=countMultsHistory[pointer];
     *beamState=beamStateHistory[pointer];
     *diff=accDiffHistory[accumNumber][pointer];
     *sum=accSumHistory[accumNumber][pointer];
     return true;
   }else{
     *laserState=LASER_UNKNOWN;
-    *countQuads=0;
+    *countMults=0;
     *diff=0.;
     *sum=1.;
   return false;
   }
 }
 void fadcAccums::StoreAccumulatorInfo(
-				      int laserState,  int beamState, int countQuads,
+				      int laserState,  int beamState, int countMults,
 				       double diff[NUM_ACCUM_TYPES],
 				       double sum[NUM_ACCUM_TYPES]){
-   //stores accumulator info for all accumulator types summed over 1 quad
+   //stores accumulator info for all accumulator types summed over 1 mult
    pointerHistory++;   //bump circular pointer
    if(pointerHistory>=NUM_HISTORY_LASER_PERIODS) pointerHistory=0;
    int pointer=pointerHistory;
    laserStateHistory[pointer]=laserState;
-   countQuadsHistory[pointer]=countQuads;
+   countMultsHistory[pointer]=countMults;
    beamStateHistory[pointer]=beamState;
    for(int i=0; i<NUM_ACCUM_TYPES; i++){
      accDiffHistory[i][pointer]=diff[i];

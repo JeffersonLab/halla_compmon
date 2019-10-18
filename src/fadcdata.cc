@@ -355,7 +355,9 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
         }
       }
       for(int trig=0; trig<NumRandomsSummed; trig++){
-        //Sums_RandomClock[trig]=(data[pointer]&0xFFFFFFF);
+        if(crlVersion >= 5 && newWaveformReadout) {
+          Sums_RandomClock[trig]=(data[pointer++]&0xFFFFFFF);
+        }
         //Sums_RandomPulserSynch[trig]= ((data[pointer++]&0xF0000000)!=0);
         for(int chan=chanStart; chan<=chanEnd; chan++){
           //          SumsData[chan][trig]=data[pointer++]+PedCorrection[chan];

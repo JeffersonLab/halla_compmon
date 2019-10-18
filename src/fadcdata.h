@@ -34,7 +34,6 @@ class fadcdata {
     int SamplesPerEvent[MAX_FADC_CHANNELS];
     int samplepointer[MAX_FADC_CHANNELS];
     int  UnpackedClock[MAX_FADC_CHANNELS][MAX_FADC_EVENTS];
-    float mpsPedestal;
     double mpsTriggerPedestal;
     double mpsRandomPedestal;
     double mpsPedestal;
@@ -55,11 +54,9 @@ class fadcdata {
     int Sums_PostData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_Clock[MAX_UNPACKED_SUMS];
     int Sums_PulserSynch[MAX_UNPACKED_SUMS];
-    //int Sums_RandomClock[MAX_UNPACKED_SUMS];
+    int Sums_RandomClock[MAX_UNPACKED_SUMS];
     //int Sums_RandomPulserSynch[MAX_UNPACKED_SUMS];
     // randoms
-    //int Sums_RandomClock[MAX_UNPACKED_SUMS];
-    //int Sums_RandomPulserSynch[MAX_UNPACKED_SUMS];
     int Sums_RandomPreData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_RandomData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
     int Sums_RandomPostData[MAX_FADC_CHANNELS][MAX_UNPACKED_SUMS];
@@ -86,6 +83,7 @@ class fadcdata {
 
     int crlVersion; // Readout depends on CRL version in use
     int newWaveformReadout;
+    int mmEnabled;
 
   public:
     fadcdata();
@@ -101,6 +99,7 @@ class fadcdata {
     void DumpBank(bankstructure bank);
     void SetCRLVersion(int crl) { crlVersion = crl; }
     void SetWaveformReadout( int version ) { newWaveformReadout = version; }
+    void SetMMEnabled(int enabled) { mmEnabled = enabled; }
     //
     //sums info
     int GetSumsNumberADCChannels(){
@@ -144,6 +143,8 @@ class fadcdata {
       return Sums_RandomData[channel][trigger];}; // sum (may be pedestal corrected, check crl version)
     int GetRandomPostSums(int channel,int trigger){
       return Sums_RandomPostData[channel][trigger];}; // post pulse sum
+    int GetRandomSumsClock(int channel, int trigger){
+      return Sums_RandomClock[trigger];}; //return clock time
     //
     //sample info
     int* GetSamples(int channel){
@@ -195,6 +196,9 @@ class fadcdata {
       return TimerPar2; } ;
     int GetPulserSetting(int flag) {
       return TimerDac[flag]; } ;
+    int GetMMEnabled() {
+      return mmEnabled;
+    }
 };
 
 #endif

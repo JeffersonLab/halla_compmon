@@ -40,6 +40,7 @@ void fadcTriggered::newRun(){
   ped_value=theParams->getFloat("ped_value");
   channel_calorimeter_PMT=theParams->getFloat("channel_calorimeter_PMT");
   calculate_sum_pedestal=theParams->getInt("calculate_sum_pedestal");
+  MMVarDacIndexPrevious = -1;
   return;
 }
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -109,6 +110,8 @@ int fadcTriggered::DefineTriggeredTree(){
   triggerWiseTree->Branch("sumClock",&sumClock,0);
   triggerWiseTree->Branch("sumPedestal",&sumPedestal,0);
   triggerWiseTree->Branch("sumIsRandom",&sumIsRandom,0);
+  triggerWiseTree->Branch("sumPre",&sumPre,0);
+  triggerWiseTree->Branch("sumPost",&sumPost,0);
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(triggerWiseTree);
   //
@@ -118,6 +121,8 @@ int fadcTriggered::DefineTriggeredTree(){
   snapshotsTree->Branch("numSamples",&NumSamples,"numSamples/I");
   snapshotsTree->Branch("snapClock",&snapshotClock,"snapClock/I");
   snapshotsTree->Branch("snap",&snapshot,"snapshot[numSamples]/F");
+  //float bcm = theStatus->GetCalibratedBCM();
+  //snapshotsTree->Branch("bcm",&bcm,"bcm/F");
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(snapshotsTree);
   //
@@ -164,12 +169,16 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
     int numInSum=theFADCdata->GetNumberSamplesSummed(chan);
     //Float_t PedCorrection = 0;
     sumPedestal = 0;
+    sumPre = 0;
+    sumPost = 0;
     int numInPedSum = 0;
 
     int crlVersion = theFADCdata->GetCRLVersion();
     int enableNewWaveformReadout = theFADCdata->GetWaveformReadoutVersion();
     int sumSign = 1;
     bool calculatePed = false;
+    int nsumPre = 0;
+    int nsumPost = 0;
     /* (jc2) Early versions of the CRL (before version 3) corrected the
      * pedestal on-the-fly (meaning, it's in the CODA file). We want to undo
      * this for those versions. So the sign is positive in this case.
@@ -182,6 +191,8 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
         sumPedestal = numInSum*ped_value;
       }
       sumSign = -1;
+      nsumPre = theFADCdata->GetNumberPreSamplesSummed(chan);
+      nsumPost = theFADCdata->GetNumberPostSamplesSummed(chan);
     } else {
       // We want to undo the pedestal correction that was done by the
       // old CRL. Instead, we want to use the one supplied in the
@@ -218,6 +229,12 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
           sumPedestal = numInSum*
             (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
         }
+        if(nsumPre>0) {
+          sumPre =  theFADCdata->GetPreSums(chan,i)/double(nsumPre);
+        }
+        if(nsumPost>0) {
+          sumPost =  theFADCdata->GetPostSums(chan,i)/double(nsumPost);
+        }
         sumVal = sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;  //move to roottree slot
         sumClock = theFADCdata->GetSumsClock(chan,i);
         //std::cout << "sumPedestal: " << sumPedestal
@@ -236,7 +253,7 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
     MMVarDacSetting=theVMEauxdata->GetDACSetting();//pulser DAC setting
     MMSynchIndex=-1;
     int synchIndex=-1;
-    if(numTriggersAccepted>4){
+    if(theFADCdata->GetMMEnabled()&&numTriggersAccepted>=4){
       //Synch Index should be set for one of every 4.  Find the first one
       //ignore the first one in case it overlaps an integration period start
       int bitPattern=0;
@@ -296,7 +313,30 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
         //output good sets to Tree (ignore first mps data)
         indexPulser=0;
         MMSynchIndexClock = theFADCdata->GetSumsClock(chan,synchIndex);
-        for(int i=synchIndex; i<numTriggersAccepted-1; i++){
+        int fillPulserCount = 0;
+        int startTrigger = (MMVarDacIndex == MMVarDacIndexPrevious) ? 1 : 5;
+        indexPulser = (startTrigger-synchIndex);
+        if(indexPulser<0)
+          indexPulser += 4;
+        indexPulser%=4;
+        for(int i=startTrigger; i<numTriggersAccepted-1*0; i++){
+          if(calculatePed) {
+            sumPedestal = numInSum*
+              (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
+          }
+          MMpulse[indexPulser ]=
+            sumSign*theFADCdata->GetSums(chan,i)+sumPedestal;
+          fillPulserCount++;
+          if(fillPulserCount>4&&mpsCount>0){
+            pulserWiseTree->Fill();
+            fillPulserCount=0;
+          }
+          indexPulser++;
+          if(indexPulser>3)indexPulser=0;
+        }
+
+        /* 
+        for(int i=synchIndex; i<numTriggersAccepted-1*0; i++){
           if(calculatePed) {
             sumPedestal = numInSum*
               (theFADCdata->GetPreSums(chan,i)/double(numInPedSum));
@@ -309,6 +349,7 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
           indexPulser++;
           if(indexPulser>3)indexPulser=0;
         }
+        */
       // } else {
       // 	//debug MPS data with bad syncs
       // 	int sum;
@@ -326,11 +367,41 @@ int fadcTriggered::DoSummedPulses(vmeauxdata* theVMEauxdata,
       // 	}
       }
     }
+    // Now store the current Variable index for next comparison
+    MMVarDacIndexPrevious=MMVarDacIndex;
     // Now store the randoms
     sumIsRandom = true;
+    if(crlVersion>=3 && enableNewWaveformReadout) {
+      if(calculate_sum_pedestal) {
+        numInPedSum = theFADCdata->GetNumberPreSamplesSummed(chan);
+        calculatePed = true;
+      } else {
+        sumPedestal = numInSum*ped_value;
+      }
+      sumSign = -1;
+      nsumPre = theFADCdata->GetNumberPreSamplesSummed(chan);
+      nsumPost = theFADCdata->GetNumberPostSamplesSummed(chan);
+    } else {
+      // We want to undo the pedestal correction that was done by the
+      // old CRL. Instead, we want to use the one supplied in the
+      // compmon.params file.
+      sumPedestal = numInSum*ped_value -
+        theFADCdata->GetSumsPedestalSubtracted(chan);
+    }
+
     for(int i=0; i<numRandomsAccepted; i++){
-      sumPedestal = numInSum*(theFADCdata->GetRandomPreSums(chan,i)/double(numInPedSum));
+      if(calculatePed) {
+        sumPedestal = numInSum*
+          (theFADCdata->GetRandomPreSums(chan,i)/double(numInPedSum));
+      }
+      if(nsumPre>0) {
+        sumPre =  theFADCdata->GetRandomPreSums(chan,i)/double(nsumPre);
+      }
+      if(nsumPost>0) {
+        sumPost =  theFADCdata->GetRandomPostSums(chan,i)/double(nsumPost);
+      }
       sumVal = sumSign*theFADCdata->GetRandomSums(chan,i)+sumPedestal;
+      sumClock = theFADCdata->GetRandomSumsClock(chan,i);
       triggerWiseTree->Fill();
     }
   }else{

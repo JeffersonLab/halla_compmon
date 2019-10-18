@@ -11,7 +11,7 @@
 #   Sources for all modules
 # -------------------------------------------------------------------------
 
-SRC	= mainanal_CompMon.cc fadcTriggered.cc fadcdata.cc vmeauxdata.cc comptonStatus.cc textParams.cc fadcAccums.cc THaEpics.C helicityTracker.cc
+SRC	= mainanal_CompMon.cc fadcTriggered.cc fadcdata.cc vmeauxdata.cc comptonStatus.cc textParams.cc fadcAccums.cc THaEpics.C helicityTracker.cc comptonHelTree.cc
 
 OBJ     = $(SRC:.cc=.o) THaCodaFile.o THaCodaData.o
 

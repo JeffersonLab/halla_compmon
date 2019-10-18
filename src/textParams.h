@@ -18,7 +18,10 @@
 using namespace std;
 #include "TString.h"
 
-#define BUFFER_LEN 5000
+//#define BUFFER_LEN 5000
+// (cornejo 2019-10-08: made the buffer lenght much larger since we have used it)
+// This should now be roughly 1MB
+#define BUFFER_LEN 125000 
 #define LABEL_LEN 50
 #define VALUE_LEN 100
 
