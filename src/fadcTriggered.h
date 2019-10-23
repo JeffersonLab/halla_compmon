@@ -58,6 +58,8 @@ class fadcTriggered {
   Float_t sumVal;   //fadc triggered data summed over single pulse
   Float_t sumClock;   //fadc triggered data clock time
   Float_t sumPedestal; ///fadc triggered data pedestal measurement (crl after 10/1016)
+  Float_t sumPre; ///fadc triggered data pedestal measurement (crl after 10/1016)
+  Float_t sumPost; ///fadc triggered data pedestal measurement (crl after 10/1016)
   Bool_t  sumIsRandom; ///fadc triggered data (is this sum random trigger?)
   //
   // Variables for building pulserWise root tree (MiniMegan pulser info)
@@ -66,6 +68,9 @@ class fadcTriggered {
   Float_t MMpulse[4]; 
   int MMVarDacIndex;
   int MMVarDacSetting;
+  int MMSynchIndex;
+  int MMSynchIndexClock;
+  int MMVarDacIndexPrevious;
   //
   // special tree for snapshots  (sampled waveforms)
   TTree* snapshotsTree;

@@ -231,8 +231,9 @@ TRANSITION = 2883 ; Start of Fall 2016 running (with DAQ tests)
 ped_value = 3846.5
 
 TRANSITION = 2921
-cavity_calibration=0.25
-cavity_power_pedestal=250
+use_BPMSumCuts=0 ; Stop using BPM to figure out if the beam is on or not
+cavity_calibration=0.05
+cavity_power_pedestal=200
 cavity_power_off_max = 20
 cavity_power_on_min=1800.0
 beam_on_min = 4 ;
@@ -244,10 +245,16 @@ use_clock_normalization=1320209; When set to zero, the clockIP is used
 BCM_calibration = 0.00035397
 BCM_pedestal = 0.36281925;
 
+TRANSITION = 2924
+ped_value=3835.23
+
 TRANSITION = 2929
 cavity_power_off_max=600
 cavity_power_on_min=4450
-ped_value=3834.95
+ped_value=3835.12
+
+TRANSITION = 2935
+ped_value=3846.2
 
 TRANSITION=2949
 use_BPMSumCuts=0 ; Stop using BPM to figure out if the beam is on or not
@@ -255,14 +262,161 @@ cavity_calibration=0.065
 cavity_power_pedestal=261
 cavity_power_off_max = 20
 cavity_power_on_min=941.0
-BCM_calibration=0.0025 ; Just some junk calibration because I know these runs have beam OFF
+;BCM_calibration=0.0025 ; Just some junk calibration because I know these runs have beam OFF
 beam_on_min=4
-BCM_pedestal = 2.456
+;BCM_pedestal = 2.456
 beam_off_max=0.25
 
+TRANSITION = 2956
+ped_value=3833.6
+
+TRANSITION = 2958
+ped_value=3845.9
+
+TRANSITION = 2959
+ped_value=3845
+
+TRANSITION = 2960
+ped_value=3844
+
+TRANSITION = 2961
+ped_value=3845.9
+
+TRANSITION = 2972
+cavity_power_on_min=825
+
+TRANSITION = 2973
+cavity_power_on_min=941
 
 TRANSITION=2974
 ped_value=3846.2
 
 TRANSITION=3054
 cavity_power_on_min=1800.0
+
+
+TRANSITION=3113
+ped_value=0
+
+; Jan 24 2019
+TRANSITION=3761
+ped_value=3797.0
+
+
+; Feb 08 2019
+TRANSITION=3803
+use_clock_normalization=0; // Use the 40Mhz clock on the DAQ to normalize
+helicity_delay=8
+ped_value=3794.8421770201
+; With HV on, Pedestal changed slightly
+TRANSITION=3804
+ped_value=3795.0163770201
+
+TRANSITION=3806
+ped_value=3794.7568404801
+
+TRANSITION=3809
+ped_value=3795.22
+
+chan_ipBCM=14
+TRANSITION=3812
+ped_value=3790.295
+
+TRANSITION=3840
+;calculate_sum_pedestal=0 ; Determine pedestal for each sum individually
+cavity_power_on_min=1600
+cavity_power_off_max=20
+ped_value=3790.17
+
+TRANSITION=3900
+helicity_bit_flip=0 ;used in helcity predicting algorith (drop?)
+
+TRANSITION=4233
+cavity_power_on_min=800
+beam_off_max=0.03
+beam_on_min=0.04
+
+TRANSITION=4236
+cavity_power_on_min=600
+
+TRANSITION=4246
+helicity_structure=8
+helicity_delay=16
+
+TRANSITION=4264
+calculate_sum_pedestal=1 ; Determine pedestal for each sum individually
+cavity_power_on_min=400
+cavity_power_off_max=20
+beam_on_min=19
+
+TRANSITION=4268
+cavity_power_on_min=380
+beam_on_min=65
+
+TRANSITION=4286
+cavity_power_on_min=300
+calculate_sum_pedestal=1 ; Determine pedestal for each sum individually
+
+TRANSITION=4290
+calculate_sum_pedestal=0 ; Determine pedestal for each sum individually
+
+TRANSITION=4293
+cavity_power_on_min=350
+cavity_power_off_max=20
+beam_on_min=98.5
+beam_off_max=0.0
+
+TRANSITION=4307
+cavity_power_on_min=300
+beam_on_min=37
+beam_off_max=1.75
+
+; Calibration for BPMs
+BPM2Axm_pedestal=3.84085e+02
+BPM2Axp_pedestal=3.85080e+02
+BPM2Aym_pedestal=4.01113e+02
+BPM2Ayp_pedestal=4.00227e+02
+BPM2Bxm_pedestal=5.16860e+02
+BPM2Bxp_pedestal=5.16664e+02
+BPM2Bym_pedestal=5.91948e+02
+BPM2Byp_pedestal=5.95274e+02
+BPM2A_alphax=1.00
+BPM2A_alphay=0.98
+BPM2B_alphax=0.99
+BPM2B_alphay=1.10
+;BPM2A_xoff=0.353
+;BPM2A_yoff=-0.274
+;BPM2B_xoff=0.164
+;BPM2B_yoff=-0.349
+BPM2A_sensitivity=18.81  ; from CED (http://ced.acc.jlab.org/elem/IPM1P02A)
+BPM2B_sensitivity=18.81
+BPM2A_angle=.0
+BPM2B_angle=.0
+
+TRANSITION=4308
+beam_on_min=98
+
+TRANSITION=4309
+ped_value=3791.3
+
+TRANSITION=4310
+cavity_power_on_min=400
+
+TRANSITION=4331
+cavity_power_on_min=1750
+cavity_power_off_max=30
+beam_on_min=67
+BCM_calibration=0.0002403
+BCM_pedestal=0.4068
+
+TRANSITION=4348
+cavity_power_on_min=1600
+
+TRANSITION=4590
+beam_on_min=83.5
+
+TRANSITION=4623
+helicity_structure=4
+
+TRANSITION=4707
+ped_value=3790.08

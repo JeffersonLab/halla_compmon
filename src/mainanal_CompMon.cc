@@ -148,6 +148,8 @@ int main(int argc, char** argv)
       dataPrefix.Data(), run,dataPostfix.Data());
   TString outFileName = TString::Format("%s/%s%d.root",outPath.Data(),
       outPrefix.Data(),run);
+  TString outHistosFileName = TString::Format("%s/%shistos_%d.root",outPath.Data(),
+      outPrefix.Data(),run);
 
   //+++++++++++++++++++++++++++++++
   //  initialize instances of classes, etc.
@@ -216,8 +218,10 @@ int main(int argc, char** argv)
   }
 
 
+  TFile* rootfilehistos = new TFile(outHistosFileName,"RECREATE","fadc histo data");
   TFile* rootfile = new TFile(outFileName,"RECREATE","fadc data");
   rootfile->SetCompressionLevel(0);
+  rootfile->cd();
   //
   // setup parameters  (edit fadcparams.h to change values)
   // then setup histograms and trees
@@ -230,11 +234,13 @@ int main(int argc, char** argv)
 
   theVMEauxdata->newRun();
 
+  rootfilehistos->cd();
   theTriggered->DefineHistos();   
+  theAccums->DefineHistos();
+  rootfile->cd();
   theTriggered->DefineTriggeredTree();
   theTriggered->newRun();
 
-  theAccums->DefineHistos();
   theAccums->DefineTree();
   theAccums->newRun();
   // initialize for new run
@@ -288,7 +294,7 @@ int main(int argc, char** argv)
 	//ComptonStatus DebugDump	
 	// mode =1  dump line every helicity window
 	// mode =2  dump transitions only
-	theComptonStatus->DebugDump(2);	 //dump some status info
+	theComptonStatus->DebugDump(-1);	 //dump some status info
 	//
 	// DUMP a few events for checking scalers and bits
 	if(codaEventNumber>=100 && codaEventNumber<=105){
@@ -307,7 +313,9 @@ int main(int argc, char** argv)
 	}
 	if(theFADCdata->IsAccumValid(calorimeterChan)){  //FADC accumulator data
 	  status=theAccums->DoAccums(theVMEauxdata,theFADCdata);
-	  status=theAccums->BuildQuad();
+	  //status=theAccums->BuildQuad();
+	  // Where a multiplet can be anything (pair, quad, octet, etc...)
+	  status=theAccums->BuildMultiplet();
 	  accumulatorCounter++;
 	}
 	
@@ -356,10 +364,21 @@ int main(int argc, char** argv)
         // version 3 or newer. So we now look to see if we implemented
         // the new waveformReadout
         if( ( buffp[j] >> 16 ) == 0xFBE3 ) {
-          printf("NewWaveformReadout is %s\n\n",(buffp[j]&0xFFFF ? "ENABLED" :
+          printf("NewWaveformReadout is %s\n",(buffp[j]&0xFFFF ? "ENABLED" :
                 "DISABLED" ));
           theFADCdata->SetWaveformReadout(buffp[j] & 0xFFFF);
         }
+        if(crlVersion >= 5) {
+          j++;
+          if( ( buffp[j] >> 16 ) == 0xFBE4 ) {
+            printf("MM is %s\n",(buffp[j]&0xFFFF ? "ENABLED" :
+                "DISABLED" ));
+            theFADCdata->SetMMEnabled(buffp[j] & 0xFFFF);
+          }
+        } else {
+          theFADCdata->SetMMEnabled(2); // Set it to two so it won't break compatibility with old data
+        }
+        printf("\n");
       }
     } else if(eventType==17){
     } else if(eventType==18){
@@ -381,8 +400,12 @@ int main(int argc, char** argv)
   printf(" EPICS events;       %10d\n",epicsCounter);
   printf(" user(flags) events: %10d\n",usereventCounter);
   status=theAccums->DoLaserTransition(1);//wrap up last laser-period if needed
+  // Apparently if it creates a sub file, we get a crash. So this is kind of a cludge to fix that
+  rootfile = theAccums->GetTree()->GetCurrentFile();
   rootfile->Write();
-  codaData->codaClose();
   rootfile->Close();
+  rootfilehistos->Write();
+  rootfilehistos->Close();
+  codaData->codaClose();
   return 0;
 }

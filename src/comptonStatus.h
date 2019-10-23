@@ -22,12 +22,13 @@
 #include "bankstructure.h"
 #include "fadcdata.h"
 #include "vmeauxdata.h"
+#include "comptonHelTree.h"
 
 #ifndef comptonStatus_h
 #define comptonStatus_h
 
-#define HELPLUS 1
-#define HELMINUS 0
+#define COMPTON_NIP_SCALERS  16
+#define COMPTON_NRUN_SCALERS 16
 
 enum laserStateFlag_t {LASER_RIGHT, LASER_LEFT, LASER_RIGHTOFF, LASER_LEFTOFF,
 		       LASER_UNKNOWN};
@@ -40,6 +41,7 @@ class comptonStatus {
   comptonStatus();
   comptonStatus(textParams* theParamsIn);
   int DefineStatusBranches(TTree *mytree);  //add-ons to other trees
+  int DefineStatusBranches(comptonHelTree *mytree);  //add-ons to other trees
   int DefineEpicsBranches(TTree *mytree);  //add-ons to other trees
   int DefineTrees();
   int newRun();  //called at start of run to initizlize status variables
@@ -51,14 +53,15 @@ class comptonStatus {
   // data extraction functions
   void DebugDump(int mode);
   int GetCountMPS(){ return countMPS;};
+  int GetMPSCoda(){ return mpsCoda;};
   int GetLaserState(){ return currentLaserState;};
   TString DecodeLaserState(int laserState);
   //
   // Stuff from IP Scaler  (integrated over helicity period scaler)
-  float GetCalibratedBCM(){ return calbcm;};
+  float GetCalibratedBCM(){ return calbcm.mpsval;};
   float GetRawBCM(){ return rawBCMFloat;};   //raw BCM IP scaler
-  float GetCalibratedCavityPower(){return cavPowerCalibrated;};
-  float GetRawcavityPower(){return rawCavPowFloat;};
+  float GetCalibratedCavityPower(){return cavPowerCalibrated.mpsval;};
+  float GetRawcavityPower(){return rawCavPower.mpsval;};
   float GetBPMSummed(){ return bpmsum;};  //sum of positon monitor info
   float GetEpicsBCMAverage(){ return epics_hacbmf;};
   int GetBeamState(){return beamState;};
@@ -69,11 +72,14 @@ class comptonStatus {
       float costheta, float xoff, float yoff, float &xlab, float &ylab);
 
   //helicity stuff
+  int GetHelicityStructure();
   int GetHelicityState();  //returns -1 if unknown, otherwise 0 or 1 
+  int GetHelicityStateReported();  //returns -1 if unknown, otherwise 0 or 1 
   int GetCurrentHelicityBit(){return statusHW->currentHelicityBit;};
   int GetCombinedSpinState() {return currentSpinState;};  //encoded helicitdy and LaserState info
   int GetCountQuad(){return statusHW->countQuartets;}; //return quad count number
   int GetIndexQuartet() {return statusHW->indexQuartet;}; //return number (0 to 3, -1 for undefined);
+  int GetIndexOctet() {return statusHW->indexOctet;}; //return number (0 to 7, -1 for undefined);
   bool IsHelicityValid(){return statusHW->helicityValid;};
   bool IsHelicityPredictionValid(){return statusHW->helicityPredictionValid;};
   bool IsHelicityBitInAgreement(){return statusHW->helicityBitInAgreement;};
@@ -83,6 +89,7 @@ class comptonStatus {
  private:
   //
   bool getEpicsValue(THaEpics *epics, const char* tag, float* pReturn, int vergose=0);
+  bool getEpicsValue(THaEpics *epics, const char *tag, TString* pReturn, int verbose=0);
   void SetEpicsDefaults();
   //
   helicityTracker* theHelicityTracker;
@@ -91,6 +98,7 @@ class comptonStatus {
   TTree* epicsWiseTree; //info from epics (in case we just want to process epics events)
   bool runWiseTreeFilled; //use to fill just once after first event
   int helicityState;
+  int helicityStateReported; // When delayed helicity reported, this is what we are told the helicity currently is
   int currentHelicityBit;  //actual helicity Bit for current MPS (not helicitdyi if running delayed)
   textParams* theParams;
   int runnum;
@@ -176,7 +184,7 @@ class comptonStatus {
   unsigned int laserstate_clock_start;
   float laserstate_clock;  //time into laser state
   int rtcavpow;
-  float cavPowerCalibrated;
+  comptonVariable<float> cavPowerCalibrated;
 
   // additional status variables for Root Tree
   int mpsCoda;    //mps counter from CODA file
@@ -192,22 +200,22 @@ class comptonStatus {
   int clockscaler;  //from RUN scaler
   int clockIP;    //from IP scaler
 
-  float rawCavPowFloat;
+  comptonVariable<float> rawCavPower;
   float bpmsum;   //backup beam current info (sum BPM info)
   float rawBCMFloat;
 
-  float calbcm;
-  float bcmsum; //backup beam current info (sum BPM info)
-  float ip_s1power;
-  float ip_s2power;
-  float ip_bpmAx;
-  float ip_bpmAy;
-  float ip_bpmBx;
-  float ip_bpmBy;
-  float bpmAx;
-  float bpmAy;
-  float bpmBx;
-  float bpmBy;
+  comptonVariable<float> calbcm;
+  comptonVariable<float> bcmsum; //backup beam current info (sum BPM info)
+  comptonVariable<float> ip_s1power;
+  comptonVariable<float> ip_s2power;
+  comptonVariable<float> ip_bpmAx;
+  comptonVariable<float> ip_bpmAy;
+  comptonVariable<float> ip_bpmBx;
+  comptonVariable<float> ip_bpmBy;
+  comptonVariable<float> bpmAx;
+  comptonVariable<float> bpmAy;
+  comptonVariable<float> bpmBx;
+  comptonVariable<float> bpmBy;
 
   //Accumulator Info
   int ithr_near;
@@ -280,9 +288,13 @@ class comptonStatus {
     float epics_tablePosY;
     float epics_cavpow;
     float epics_hacbmf;
+    float epics_qw1;
+    float epics_hw1;
+    float epics_qw2;
     float epics_cavpolpercent;
     float epics_s1;
     float epics_s2;
+    float epics_locking;
     float epics_cavpoldir;
     int epics_ihwp_in;
     float epics_aPosX;
@@ -292,6 +304,8 @@ class comptonStatus {
     float epics_Thermo1;
     float epics_Thermo2;
     float epics_TimeStamp;
+    std::string epics_datestring;
+    TString epics_lockstring;
 
     float epics_coda_deadtime;	// ratio of mps to l1a
     int epics_wein_right;
@@ -299,25 +313,9 @@ class comptonStatus {
     float epbeameng;
     float eptransmit;
 
-
-    // test0 thru test 11?
-    int test0;
-    int test1;
-    int test2;
-    int test3;
-    int test4;
-    int test5;
-    int test6;
-    int test7;
-    int test8;
-    int test9;
-    int test10;
-    int test11;
-    int test12;
-    int test13;
-    int test14;
-    int test15;
-
+    comptonVariable<int> scaler_ip[COMPTON_NIP_SCALERS];
+    comptonVariable<int> scaler_run[COMPTON_NIP_SCALERS];
+    int scaler_runPrev[COMPTON_NRUN_SCALERS];
 
     /* //UNKNOWN from original fadcanal.h */
 

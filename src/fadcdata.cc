@@ -12,7 +12,7 @@ using namespace std;
 
 #include "bankstructure.h"
 #include "fadcdata.h"
-#define MAX_SAMPLES 100000//changed from 100000
+#define MAX_SAMPLES 10000//changed from 100000
 fadcdata::fadcdata(){
   crlVersion = 1;
   newWaveformReadout = 0;
@@ -110,6 +110,7 @@ int fadcdata::UnpackSamples(bankstructure bank) {
     triggermode=data[1]&0xffff;;          //fadc trigger mode
     sampleformat=(data[1]>>16)&0xffff;   //sample data format
     if(triggermode==5){     //random sampling implemented 9/14/2009
+      //std::cout << "Random found!" << std::endl;
       RandomTimes[chan]= 1;
     }else{
       RandomTimes[chan]= 0;
@@ -342,6 +343,8 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
       int pointer=8;  //first data word for firsttrigger
       for(int trig=0; trig<NumTriggersSummed; trig++){
         Sums_Clock[trig]=(data[pointer]&0xFFFFFFF);
+        Sums_PulserSynch2[trig]= (data[pointer]>>28);
+        //Sums_PulserSynch2[trig]= 0;
         Sums_PulserSynch[trig]= ((data[pointer++]&0xF0000000)!=0);
         for(int chan=chanStart; chan<=chanEnd; chan++){
 	  //          SumsData[chan][trig]=data[pointer++]+PedCorrection[chan];
@@ -352,7 +355,9 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
         }
       }
       for(int trig=0; trig<NumRandomsSummed; trig++){
-        //Sums_RandomClock[trig]=(data[pointer]&0xFFFFFFF);
+        if(crlVersion >= 5 && newWaveformReadout) {
+          Sums_RandomClock[trig]=(data[pointer++]&0xFFFFFFF);
+        }
         //Sums_RandomPulserSynch[trig]= ((data[pointer++]&0xF0000000)!=0);
         for(int chan=chanStart; chan<=chanEnd; chan++){
           //          SumsData[chan][trig]=data[pointer++]+PedCorrection[chan];

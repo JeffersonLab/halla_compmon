@@ -1,7 +1,7 @@
 /*
 //	fadcAccums
 //      Analysis of fadc accumulator dada
-//      and various MPS-wise and Quarterwise data
+//      and various MPS-wise and Multipletwise (previously just Quarterwise) data
 */
 
 #include <stdlib.h>
@@ -41,18 +41,21 @@ class fadcAccums {
   void newRun();   //init counters at start of a run
   int DefineHistos();
   int DefineTree();
+  TTree *GetTree() { return multipletWiseTree; } // Useful for when ROOT splits files, to get back the current file
   void labelSpinSortedHistos(TH1F* histo);
   int DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata); 
-  int BuildQuad(); 
+  int BuildMultiplet(); 
   int DoLaserTransition(int wrapup);    //called when laser state                                           //transition encountered and at end of run
   int DoNormalizedHistos();
   bool GetSummedAccumulatorRecord(int record,int accumNumber, int* laserState, int*  beamState,
-				  int* countQuads, double* numerator, double* denominator);
-  void StoreAccumulatorInfo(int laserState, int beamState, int countQuads,
+				  int* countMults, double* numerator, double* denominator);
+  void StoreAccumulatorInfo(int laserState, int beamState, int countMults,
 			   double numerator[NUM_ACCUM_TYPES],
 			    double denominator[NUM_ACCUM_TYPES]);
 
  private:
+  char multipletName[200]; //name of multiplet pattern (i.e. Quartet, Octet)
+  int helicityStructure; // 2 (pair), 4 (quartet), 8 (octet)
   textParams* theParams;   //pointer to instance of comptonParameter class
   comptonStatus* theStatus;  //pointer to instance of comptonStatus class
   // parameters read by textParams class
@@ -61,23 +64,26 @@ class fadcAccums {
   float accumHistoScaledRange;
   float channel_calorimeter_PMT;
   float ped_value;
+
+  // Define the standard compton variable tree
+  comptonHelTree *comptonTree;
   //
   //Variables output to triggeredWise root tree
   TTree* mpsWiseTree;
   //accumulator data
   int nacc[NUM_ACCUM_TYPES];
   int64_t accraw[NUM_ACCUM_TYPES];  //raw acumuilator data
-  double accsig[NUM_ACCUM_TYPES];   //pedestal corrected accumulator data
-  double naccsig[NUM_ACCUM_TYPES];   //number of samples in accumulator data
+  comptonVariable<double> FIXHELaccsig[NUM_ACCUM_TYPES];   //pedestal corrected accumulator data
+  comptonVariable<double> FIXHELnaccsig[NUM_ACCUM_TYPES];   //number of samples in accumulator data
   double mpsPedestal; // Pedestal as determined from triggered+randoms sums.
   double mpsRandomPedestal; // Pedestal as determined from randoms sums.
   double mpsTriggerPedestal; // Pedestal as determined from triggered sums.
   //
-  // Quartetwise and Laserwise info
-  TTree* quartetWiseTree;
-  int lastSubQuad;   //track where we are within a helicity quad set
-  bool quartetValid;  //used by valid quartet checking algorithm
-  bool quartetStable; //true if laser and beam states stable over quartet
+  // Multipletwise and Laserwise info
+  TTree* multipletWiseTree;
+  int lastSubMult;   //track where we are within a helicity multiple set (pair,mult,oct, etc...)
+  bool multipletValid;  //used by valid multiplet checking algorithm
+  bool multipletStable; //true if laser and beam states stable over multiplet
   int prevLaserStateEncountered;
   int laserStateBeingSummed;
   int beamStateBeingSummed;
@@ -85,30 +91,31 @@ class fadcAccums {
   double bcmLastLaserOff;  //keep for background subtractio
 
   //sum periods within a Quartet
-  int laserStateThisQuad;     //laserState for this Quad 
-  int beamStateThisQuad;        //beam on, off, or unknown for this Quad
-  double accPosQuad[NUM_ACCUM_TYPES];  //Sum of Positive helicity bins
-  double accNegQuad[NUM_ACCUM_TYPES];  //Sum of Negative helicity
-  double naccPosQuad[NUM_ACCUM_TYPES];  //# samples
-  double naccNegQuad[NUM_ACCUM_TYPES];  //# samples
+  int laserStateThisMult;     //laserState for this Mult 
+  int beamStateThisMult;        //beam on, off, or unknown for this Mult
+  double accPosMult[NUM_ACCUM_TYPES];  //Sum of Positive helicity bins
+  double accNegMult[NUM_ACCUM_TYPES];  //Sum of Negative helicity
+  double naccPosMult[NUM_ACCUM_TYPES];  //# samples
+  double naccNegMult[NUM_ACCUM_TYPES];  //# samples
 
-  double beamPosQuad;  //same for summed beam charge
-  double beamNegQuad;
+  double beamPosMult;  //same for summed beam charge
+  double beamNegMult;
   int countPosMinNeg;  //count positive HW windows minus negative HW windos
   //
-  //Sum up quartets within each laser period 
-  int countQuadsLaserPeriod;
+  //Sum up multiplets within each laser period 
+  int countMultsLaserPeriod;
   int firstMPS;
-  int quartetHelicity;   //lower bits get helcity pattern
+  int multipletHelicity;   //lower bits get helcity pattern
+  int multipletReportedHelicity;   // the current lower bits get helcity pattern (should be same as multipletHelicity if not delayed)
   double accPosLaserPeriod[NUM_ACCUM_TYPES]; //sum within a laser period
   double accNegLaserPeriod[NUM_ACCUM_TYPES];
   double beamPosLaserPeriod;
   double beamNegLaserPeriod;
-  double epics_quartetBCM;
+  double epics_multipletBCM;
   //
   //data base for history of last N laser period sums
-  int pointerHistory;   //points to most recent quad info in histor arrays
-  int countQuadsHistory[NUM_HISTORY_LASER_PERIODS];
+  int pointerHistory;   //points to most recent mult info in histor arrays
+  int countMultsHistory[NUM_HISTORY_LASER_PERIODS];
   int laserStateHistory [NUM_HISTORY_LASER_PERIODS];
   int beamStateHistory[NUM_HISTORY_LASER_PERIODS];
   double accDiffHistory[NUM_ACCUM_TYPES][NUM_HISTORY_LASER_PERIODS]; 
@@ -116,7 +123,7 @@ class fadcAccums {
   double beamDiffHistory[NUM_HISTORY_LASER_PERIODS]; 
   double beamSumHistory[NUM_HISTORY_LASER_PERIODS];
   //
-  //Quartet Asymmetries
+  //Multiplet Asymmetries
   //accumulator 0
   
   TH1F* hQ_aligned0_beamOff;  //Acc0 spin aligned beam off
@@ -206,7 +213,7 @@ class fadcAccums {
   TH1F* hM_acc4_beamOff_laserOff;
   //
   // Misc Histogram
-  TH2F* hS_Asym0_raw;   //strip charge of quad raw asymmetry
+  TH2F* hS_Asym0_raw;   //strip charge of mult raw asymmetry
 };
 
 #endif

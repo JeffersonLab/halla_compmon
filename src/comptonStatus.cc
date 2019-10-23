@@ -103,6 +103,13 @@ int comptonStatus::DefineEpicsBranches(TTree* mytree){
   mytree->Branch("epics_verticalFingerCurrent", &epics_verticalFingerCurrent, "epics_verticalFingerCurrent/F");
   mytree->Branch("epics_tablePosX", &epics_tablePosX, "epics_tablePosX/F");
   mytree->Branch("epics_tablePosY", &epics_tablePosY, "epics_tablePosY/F");
+  mytree->Branch("epics_qw1", &epics_qw1, "epics_qw1/F");
+  mytree->Branch("epics_hw1", &epics_hw1, "epics_hw1/F");
+  mytree->Branch("epics_qw2", &epics_qw2, "epics_qw2/F");
+  mytree->Branch("epics_cavpolpercent", &epics_cavpolpercent, "epics_cavpolpercent/F");
+  mytree->Branch("epics_s1", &epics_s1, "epics_s1/F");
+  mytree->Branch("epics_s2", &epics_s2, "epics_s2/F");
+  mytree->Branch("epics_locking", &epics_locking, "epics_locking/F");
   mytree->Branch("epics_ihwp_in", &epics_ihwp_in, "epics_ihwp_in/I");
   mytree->Branch("epics_wein_right", &epics_wein_right, "epics_wein_right/I");
   mytree->Branch("epics_bpmAx",&epics_aPosX,"epics_bpmAx/F"); //BPM info
@@ -113,6 +120,8 @@ int comptonStatus::DefineEpicsBranches(TTree* mytree){
   mytree->Branch("epics_Thermo1",&epics_Thermo1,"epics_Thermo1/F");
   mytree->Branch("epics_Thermo2",&epics_Thermo2,"epics_Thermo2/F");
   mytree->Branch("epics_TimeStamp",&epics_TimeStamp,"epics_TimeStamp/F");
+  mytree->Branch("epics_datestring",&epics_datestring);
+  mytree->Branch("epics_cavpow",&epics_cavpow);
 
   return 0;
 }
@@ -121,6 +130,7 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
 // External-data branches containing status info shared by all tree
   mytree->Branch("runNumber", &run_number, "runNumber/I");
   mytree->Branch("helicityState", &helicityState, "helicityState/I");
+  mytree->Branch("helicityStateReported", &helicityStateReported, "helicityState/I");
   mytree->Branch("laserState", &currentLaserState, "laserstate/I");
   mytree->Branch("combinedSpinState", &currentSpinState, "CombinedSpinState/I");
   mytree->Branch("beamState", &beamState, "beamState/I");
@@ -132,25 +142,8 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("mpsSinceEpics",&countMPSsinceEPICS,"mpsSinceEpics/I");
   mytree->Branch("countLaserCycles", &countLaserCycles, "countLaserCycles/i");
 
-  mytree->Branch("cavPowerCalibrated", &cavPowerCalibrated, "cavPowerCalibrated/F");
-  mytree->Branch("rawCavPower", &rawCavPowFloat, "rawCavPower/F");
-  mytree->Branch("s1power", &ip_s1power, "s1power/F");
-  mytree->Branch("s2power", &ip_s2power, "s2power/F");
-
-  mytree->Branch("bcm", &calbcm, "bcm/F");
   mytree->Branch("rawBCM", &rawBCMFloat, "rawBCM/F");
   mytree->Branch("bpmSum", &bpmsum, "bpmSum/F");
-
-  mytree->Branch("bpmAx_raw", &ip_bpmAx, "bpmAx_raw/F");
-  mytree->Branch("bpmAy_raw", &ip_bpmAy, "bpmAy_raw/F");
-  mytree->Branch("bpmBx_raw", &ip_bpmBx, "bpmBx_raw/F");
-  mytree->Branch("bpmBy_raw", &ip_bpmBy, "bpmBy_raw/F");
-
-  // The lab coordinates
-  mytree->Branch("bpmAx", &bpmAx, "bpmAx/F");
-  mytree->Branch("bpmAy", &bpmAy, "bpmAy/F");
-  mytree->Branch("bpmBx", &bpmBx, "bpmBx/F");
-  mytree->Branch("bpmBy", &bpmBy, "bpmBy/F");
 
   mytree->Branch("clockRun", &clockscaler, "clockRun/i");
   mytree->Branch("clockIP", &clockIP, "clockIP/i");
@@ -173,24 +166,51 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("HV_trip", &HV_trip, "HV_trip/I");
   mytree->Branch("rate_fluct", &rate_cut, "rate_fluct/I");
   mytree->Branch("epics_dead", &epics_dead, "epics_dead/I");
-  mytree->Branch("test0", &test0, "test0/I");
-  mytree->Branch("test1", &test1, "test1/I");
-  mytree->Branch("test2", &test2, "test2/I");
-  mytree->Branch("test3", &test3, "test3/I");
-  mytree->Branch("test4", &test4, "test4/I");
-  mytree->Branch("test5", &test5, "test5/I");
-  mytree->Branch("test6", &test6, "test6/I");
-  mytree->Branch("test7", &test7, "test7/I");
-  mytree->Branch("test8", &test8, "test8/I");
-  mytree->Branch("test9", &test9, "test9/I");
-  mytree->Branch("test10", &test10, "test10/I");
-  mytree->Branch("test11", &test11, "test11/I");
-  mytree->Branch("test12", &test12, "test12/I");
-  mytree->Branch("test13", &test13, "test13/I");
-  mytree->Branch("test14", &test14, "test14/I");
-  mytree->Branch("test15", &test15, "test15/I");
+
+  // Add the test variables for backwards compatibility
+  for(Int_t c = 0; c < COMPTON_NIP_SCALERS; c++) {
+    mytree->Branch(TString::Format("test%d",c),&(scaler_ip[c].mpsval));
+  }
   return 0;
 }
+
+int comptonStatus::DefineStatusBranches(comptonHelTree *mytree){
+
+  // Add beam parameters
+  mytree->AddVariable(&calbcm,"bcm","BCM",true);
+  mytree->AddVariable(&ip_s1power,"s1power","S1Power",true);
+  mytree->AddVariable(&ip_s2power,"s2power","S2Power",true);
+  mytree->AddVariable(&ip_bpmAx,"bpmAx_raw","BPMAxRaw",true);
+  mytree->AddVariable(&ip_bpmAy,"bpmAy_raw","BPMAyRaw",true);
+  mytree->AddVariable(&ip_bpmBx,"bpmBx_raw","BPMBxRaw",true);
+  mytree->AddVariable(&ip_bpmBx,"bpmBy_raw","BPMByRaw",true);
+  mytree->AddVariable(&bpmAx,"bpmAx","BPMAx",true);
+  mytree->AddVariable(&bpmAy,"bpmAy","BPMAy",true);
+  mytree->AddVariable(&bpmBx,"bpmBx","BPMBx",true);
+  mytree->AddVariable(&bpmBx,"bpmBy","BPMBy",true);
+  mytree->AddVariable(&cavPowerCalibrated,"cavPowerCalibrated","CavPowerCalibrated",true);
+  mytree->AddVariable(&rawCavPower,"rawCavPow","RawCavPow",true);
+
+
+  //Now add the helicity related ones
+  for(Int_t c = 0; c < COMPTON_NIP_SCALERS; c++) {
+    std::cout << "Defining scaler_ip[" << c << "]" << std::endl;
+    mytree->AddVariable(&(scaler_ip[c]), TString::Format("scaler_ip%d",c),
+      TString::Format("ScalerIP%d",c));
+  }
+  for(Int_t c = 0; c < COMPTON_NRUN_SCALERS; c++) {
+    mytree->AddVariable(&(scaler_run[c]), TString::Format("scaler_run%d",c),
+      TString::Format("ScalerRun%d",c));
+    scaler_runPrev[c] = 0;
+  }
+
+  //Lastly, define the usual status branches (the non-helicity correlated ones)
+  DefineStatusBranches(mytree->TreeMPS());
+  DefineStatusBranches(mytree->TreeMult());
+
+  return 0;
+}
+
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 int comptonStatus::newRun(){
@@ -278,8 +298,8 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   rtcavpol= theAuxData->GetCavityPolBit();  
   currentHelicityBit=theAuxData->GetHelicityBit(); //from input register 
   inttime=theAuxData->GetIntTime();
-  ip_s1power=theAuxData->GetVtoFPowLeftIPScaler();
-  ip_s2power=theAuxData->GetVtoFPowRightIPScaler();
+  ip_s1power.mpsval=theAuxData->GetVtoFPowLeftIPScaler();
+  ip_s2power.mpsval=theAuxData->GetVtoFPowRightIPScaler();
 
   //StuffFADC settings that should not actually be changing every event...
   ithr_near=theFADCdata->GetThresh(0,0); //Assume FADC channel 0 for now
@@ -297,6 +317,7 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   helicityState=
     theHelicityTracker->newHelicityWindow(currentHelicityBit,-1,mpsScaler,1);
   statusHW=theHelicityTracker->GetHelicityStatus(); //pointer to helicity info
+  helicityStateReported=GetHelicityStateReported();
   if(countMPS%100==0){
     if(!statusHW->helicitySynchValid){
        printf("Unable to synch to helicity pattern currentHelicityBit= %d\n",
@@ -340,10 +361,10 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   // For backwards compatibility, also do the "raw" values, with no
   // calibrations
   if(bpmYM+bpmYP>0){
-    ip_bpmAy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
+    ip_bpmAy.mpsval= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmYM+bpmYP>0){
-    ip_bpmAx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
+    ip_bpmAx.mpsval= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
   // Now do the second BPM
   bpmYM=theAuxData-> GetVtoFBPM2BymIPScaler();
@@ -357,10 +378,10 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   // For backwards compatibility, also do the "raw" values, with no
   // calibrations
   if(bpmYM+bpmYP>0){
-    ip_bpmBy= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
+    ip_bpmBy.mpsval= (bpmYP-bpmYM)/float(bpmYP+bpmYM);
   }
   if(bpmXM+bpmXP>0){
-    ip_bpmBx= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
+    ip_bpmBx.mpsval= (bpmXP-bpmXM)/float(bpmXP+bpmXM);
   }
   // Now determine the lab frame beam positions
   float BPM2A_sintheta = sin(BPM2A_angle);
@@ -368,31 +389,31 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   float BPM2B_sintheta = sin(BPM2B_angle);
   float BPM2B_costheta = cos(BPM2B_angle);
   ComputeBPMPositionLab(rot_bpmAx,rot_bpmAy,BPM2A_sintheta,BPM2A_costheta,
-      BPM2A_xoff,BPM2A_yoff,bpmAx,bpmAy);
+      BPM2A_xoff,BPM2A_yoff,bpmAx.mpsval,bpmAy.mpsval);
   ComputeBPMPositionLab(rot_bpmBx,rot_bpmBy,BPM2B_sintheta,BPM2B_costheta,
-      BPM2B_xoff,BPM2B_yoff,bpmBx,bpmBy);
+      BPM2B_xoff,BPM2B_yoff,bpmBx.mpsval,bpmBy.mpsval);
 
   //assume 40 MHz clock, but this may not be correct for Spring 2016
-  rawCavPowFloat=theAuxData->GetCavityPowerScaler();
+  rawCavPower.mpsval=theAuxData->GetCavityPowerScaler();
   if(clockValue<0){
-    cavPowerCalibrated=0;
-    calbcm=0;
+    cavPowerCalibrated.mpsval=0;
+    calbcm.mpsval=0;
     bpmsum=0;
   }else{
-    cavPowerCalibrated=clockRateIP*( cavPowerCalibration*
+    cavPowerCalibrated.mpsval=clockRateIP*( cavPowerCalibration*
     theAuxData->GetCavityPowerScaler() )/clockValue;
-    cavPowerCalibrated+=-cavPowerPedestal;
-    calbcm = (float) bcmscaler/clockValue;
-    calbcm *= clockRateIP*BCMCalibration;
-    calbcm +=-BCMPedestal;
+    cavPowerCalibrated.mpsval+=-cavPowerPedestal;
+    calbcm.mpsval = (float) bcmscaler/clockValue;
+    calbcm.mpsval *= clockRateIP*BCMCalibration;
+    calbcm.mpsval +=-BCMPedestal;
     bpmsum *=clockRateIP*BPMSumCalibration/clockValue;
     bpmsum += -BPMSumPedestal;
   }
   beamStatePrev=beamState;      //keep previous MPS beam on/off status
   if(useBPMSumCuts==0){     //normal BCM beam state cuts
-    if(calbcm > BCM_OnMin){
+    if(calbcm.mpsval > BCM_OnMin){
       beamState=BEAM_ON;
-    }else if(calbcm<BCM_OffMax){
+    }else if(calbcm.mpsval<BCM_OffMax){
       beamState=BEAM_OFF;
     }else{
       beamState=BEAM_UNKNOWN;
@@ -438,31 +459,30 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
     currentSpinState=SPIN_UNKNOWN;
   }
   //transfer in scalers.
-  test0 = theAuxData->GetIPScaler(0);
-  test1 = theAuxData->GetIPScaler(1);
-  test2 = theAuxData->GetIPScaler(2);
-  test3 = theAuxData->GetIPScaler(3);
-  test4 = theAuxData->GetIPScaler(4);
-  test5 = theAuxData->GetIPScaler(5);
-  test6 = theAuxData->GetIPScaler(6);
-  test7 = theAuxData->GetIPScaler(7);
-  test8 = theAuxData->GetIPScaler(8);
-  test9 = theAuxData->GetIPScaler(9);
-  test10= theAuxData->GetIPScaler(10);
-  test11= theAuxData->GetIPScaler(11);
-  test12= theAuxData->GetIPScaler(12);
-  test13= theAuxData->GetIPScaler(13);
-  test14= theAuxData->GetIPScaler(14);
-  test15= theAuxData->GetIPScaler(15);
+  for(int c = 0; c < COMPTON_NIP_SCALERS; c++) {
+    scaler_ip[c].mpsval = theAuxData->GetIPScaler(c);
+  }
+  for(int c = 0; c < COMPTON_NRUN_SCALERS; c++) {
+    scaler_run[c].mpsval = theAuxData->GetScaler(c) - scaler_runPrev[c];
+    scaler_runPrev[c] = theAuxData->GetScaler(c);
+  }
   if( !runWiseTreeFilled){
     runWiseTree->Fill();
     runWiseTreeFilled=true;
   }
   return transition;
 }
+int comptonStatus::GetHelicityStructure(){
+  return helicityStructure;
+}
+
 int comptonStatus::GetHelicityState(){
   return statusHW->helicityState;
  }
+int comptonStatus::GetHelicityStateReported(){
+  return statusHW->currentHelicityBit;
+ }
+
 
 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -486,7 +506,7 @@ void comptonStatus::DebugDump(int mode){
     
     printf("integers: \n");
     printf("   bcmscaler                     %d\n",bcmscaler);
-    printf("   calbcm (calibrated bcmscaler) %f\n",calbcm);
+    printf("   calbcm (calibrated bcmscaler) %f\n",calbcm.mpsval);
     printf("   rtcavPower                    %d\n",rtcavpow);
     //    printf("   cavityPowerScaler             %d\n",theAuxData->GetCavityPowerScaler());
     printf("   clock_diff                    %d\n",clock_diff);
@@ -524,9 +544,9 @@ bool comptonStatus::SetLaserState(){
   // Set previous laser state
   previousLaserState = currentLaserState;
   lastKnownLaserState = knownLaserState;
-  if(cavPowerCalibrated<rtcavpowoff){
+  if(cavPowerCalibrated.mpsval<rtcavpowoff){
     laser_on=0;
-  }else if(cavPowerCalibrated>rtcavpowon){
+  }else if(cavPowerCalibrated.mpsval>rtcavpowon){
     laser_on=1;
   }else{
     laser_on=-1;  //unkown state (in transistion):
@@ -586,14 +606,26 @@ bool comptonStatus::SetLaserState(){
 // Use TIR and EPICS data to figure out current/previous laser state
 // private routine
 bool comptonStatus::getEpicsValue(THaEpics *epics, const char* tag, float* pReturn, int verbose){
-        if (epics->IsLoaded(tag)){
-	  *pReturn =epics->GetData(tag);
-	  if(verbose>1) printf("%30s = %f\n",tag,*pReturn);
-	  //     *pReturn = epics->GetData(tag);
-	}else{
-	  if(verbose>0) printf("%s Not Found \n",tag);
-	}
-	return true;
+  if (epics->IsLoaded(tag)){
+	*pReturn = epics->GetData(tag);
+	if(verbose > 1) printf("%30s = %f\n",tag,*pReturn);
+    //     *pReturn = epics->GetData(tag);
+  }
+  else{
+    if(verbose > 0) printf("%s Not Found \n",tag);
+  }
+  return true;
+}
+bool comptonStatus::getEpicsValue(THaEpics *epics, const char* tag, TString* pReturn, int verbose){
+  if (epics->IsLoaded(tag)){
+    *pReturn = epics->GetString(tag);
+    if(verbose > 1)
+      printf("%30s = %s\n",tag,pReturn->Data());
+  }
+  else{
+    if(verbose > 0) printf("%s Not Found \n",tag);
+  }
+  return true;
 }
 void comptonStatus::SetEpicsDefaults(){
   //EPICS values aren't useful until first EPICS event is encounted
@@ -605,8 +637,12 @@ void comptonStatus::SetEpicsDefaults(){
   epics_tablePosX=defValue;
   epics_tablePosY=defValue;
   epics_hacbmf=defValue;
+  epics_qw1=defValue;
+  epics_hw1=defValue;
+  epics_qw2=defValue;
   epics_s1=defValue;
   epics_s2=defValue;
+  epics_locking=defValue;
   epics_cavpow=defValue;
   //
   defValue=-10.0;   //something silly but will showup  in histogram
@@ -617,6 +653,8 @@ void comptonStatus::SetEpicsDefaults(){
   epics_Thermo1=defValue;
   epics_Thermo2=defValue;
   epics_TimeStamp=0;
+  epics_datestring="";
+  epics_lockstring="";
  return;
 }
 
@@ -651,9 +689,19 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 	valid=getEpicsValue(epics,"COMPTON_PW1PCAV_ca",&epics_cavpow,verbose);
 	//	valid=getEpicsValue(epics,"COMPTON_SU_POLAR_mo",%epics_spol,verbose);
 	valid=getEpicsValue(epics,"hac_bcm_average",&epics_hacbmf,verbose);
+  valid=getEpicsValue(epics,"COMPTON_QW1_POSRB",&epics_qw1,verbose);
+  valid=getEpicsValue(epics,"COMPTON_HW1_POSRB",&epics_hw1,verbose);
+  valid=getEpicsValue(epics,"COMPTON_QW2_POSRB",&epics_qw2,verbose);
 	valid=getEpicsValue(epics,"COMPTON_CAVPOLAR_ca",&epics_cavpolpercent,verbose);
 	valid=getEpicsValue(epics,"COMPTON_PW1R_S1_ca",&epics_s1,verbose);
 	valid=getEpicsValue(epics,"COMPTON_PW1R_S2_ca",&epics_s2,verbose);
+  valid=getEpicsValue(epics,"COMPTON_SERVO_AUTObo",&epics_lockstring,verbose);
+  if(epics_lockstring.CompareTo("OFF") == 0){
+    epics_locking = 0;
+  }
+  else if(epics_lockstring.CompareTo("ON") == 0){
+    epics_locking = 1;
+  }
 
 	valid=getEpicsValue(epics,"IPM1P02A.YPOS",&epics_aPosY);
 	valid=getEpicsValue(epics,"IPM1P02A.XPOS",&epics_aPosX);
@@ -662,12 +710,13 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 	
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T1",&epics_Thermo1);
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T2",&epics_Thermo2);
-	epics_TimeStamp = epics->GetTimeStamp("HaComptonSIM900_P2T1");
+	epics_TimeStamp = epics->GetTimeStamp("hac_bcm_average");
+	epics_datestring = epics->GetLastReadDate();
 
         if (epics->IsLoaded("IGL1I00OD16_16")){
           spol = epics->GetString("IGL1I00OD16_16");
-          epics_ihwp_in =1;
-          if (spol.Strip(TString::kTrailing, ' ') == "OUT") epics_cavpoldir = 0;
+          epics_ihwp_in = 1;
+          if (spol.Strip(TString::kTrailing, ' ') == "OUT") epics_ihwp_in = 0;
 	}
 
         if (epics->IsLoaded("COMPTON_SU_POLAR_mo")){

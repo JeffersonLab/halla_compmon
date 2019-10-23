@@ -139,6 +139,7 @@ int THaEpics::LoadData(const uint32_t* evbuffer, int evnum)
      
      // Extract date time stamp
      date = strtok(buf,"\n");
+     lastReadDate = date;
      if(DEBUGL) cout << "Timestamp: " << date <<endl;
      // Extract EPICS tags, values, and units.
      while( (line = strtok(0,"\n")) ) {
