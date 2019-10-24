@@ -107,9 +107,9 @@ if [ ! -f $COMP_ROOTFILES/compmon_$run_num.root ] || [ $replay -eq 1 ]; then
 fi
 
 if [ $max_evt -gt 0 ]; then
-  root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num,$max_evt\)
+  root -q -b -l $COMPMON_MACROS/dataQualityCheck.C\($run_num,$max_evt\)
 else
-  root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num\)
+  root -q -b -l $COMPMON_MACROS/dataQualityCheck.C\($run_num\)
 fi
 if [ $web_upload -eq 1 ]; then
   root -l -b -q $COMPMON_LASERCYCLES/laserPatternWise.C\($run_num\)
@@ -122,8 +122,8 @@ if [ $panguin -eq 1 ]; then
 fi
 
 if [ $web_upload == 1 ]; then
-  root -q -b -l $COMPMON_DIR/writeToPDF.C\($run_num\)
-  python $COMPMON_DIR/write_html.py $DATE $TIME index.html
+  root -q -b -l $COMPMON_MACROS/writeToPDF.C\($run_num\)
+  python $COMPMON_SCRIPTS/write_html.py $DATE $TIME index.html
 fi
 
 if [ $rootfile_keep -eq 0 ]; then
