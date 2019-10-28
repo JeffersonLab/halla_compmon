@@ -6,6 +6,7 @@
 // ftp://root.cern.ch/root/doc/ROOTUsersGuideHTML/ch02s06.html
 
 // Set the plot limits here
+const Int_t kVarDACCE = 32661;
 const Float_t kDeltaLow  = -10000*0-2000;
 const Float_t kDeltaHigh =  10000*0+5000*0+20000;
 const Float_t kVarLow    = -10000*0-3000;
@@ -24,6 +25,8 @@ const Int_t   kBothBins  = 10000*0+500;
 const Int_t  kNothingBins = 10000*0+500;
 
 TGraphErrors *gr;
+
+TH1F *hVarCE;
 
 // -------- Main program ----------------------
 
@@ -132,6 +135,7 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
   TH1F*h4 = new TH1F("BG","BG",kNothingBins,kNothingLow,kNothingHigh);
   TH1F*h5 = new TH1F("Delta Contribution","Delta Contribution",kDiffBins,kDiffLow,kDiffHigh);
   TH1F*h6 = new TH1F("All DAC Setting Delta Contrib.","All DAC Setting Delta Contrib.",kDiffBins,kDiffLow,kDiffHigh);
+  hVarCE = new TH1F("hVarCE","Variable @ CE", kVarBins,kVarLow,kVarHigh);
 
 
   Int_t nevents=(Int_t)t1->GetEntries(); // Found form in sample 
@@ -186,6 +190,9 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
       h_diff[varIndex]->Fill(pBoth-pVar);
       if(settingDAC[varIndex]==-1) {
         settingDAC[varIndex]=varDAC;
+      }
+      if(varDAC==kVarDACCE) {
+        hVarCE->Fill(pVar-pNothing);
       }
     }  
   }

@@ -43,6 +43,7 @@ const Double_t kResponseComptonEdge[2] = {48400.0, 25000. };
 
 TGraphErrors *grsc;
 TGraph *gr2 = (TGraph*)gROOT->FindObject("gr");
+TH1F *histoVarCE = (TH1F*)gROOT->FindObject("hVarCE");
 
 
 
@@ -232,6 +233,7 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
 
   Double_t high = Responsesc[0];
   high = kResponseComptonEdge[halfGain];
+  high = histoVarCE->GetMean();
   Double_t DeltaInit = finiteDifferencesc[0]/high;
   Double_t LastDelta = 0;
   Delta = DeltaInit;
@@ -351,7 +353,7 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
     }
     double dnLE = 0;
     Double_t dnLsum = computeDiffNonLinWErr(par,params-1,kComptonEdgeScale,parError,dnLE);
-    std::cout << "Diff non-lin: " << 100.*(dnLsum) << "% (+/- " << dnLE*100. << "%) @ CE" << std::endl;
+    std::cout << "Diff non-lin: " << 100.*(dnLsum) << "% (+/- " << dnLE*100. << "%) @ CE (" << histoVarCE->GetMean()/1e3 << " ksrau)" << std::endl;
 
     TCanvas *canvDiffLin = (TCanvas*)gROOT->FindObject("canvDiffLin");
     if(canvDiffLin==0) {
