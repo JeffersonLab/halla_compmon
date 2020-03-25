@@ -192,6 +192,7 @@ void averageSnapshot(int run, bool randomOnly = false)
 
 int gStepRandomSnapshotNextEntry = 0;
 TCanvas *canvRandom = 0;
+/*
 void stepRandomSnapshot(int run, int startEntry)
 {
   config(run);
@@ -236,6 +237,60 @@ void stepRandomSnapshot(int run, int startEntry)
   }
   std::cout << "Apparently nothing got plotted" << std::endl;
 }
+*/
+void stepRandomSnapshot(int run, int startEntry = -1)
+{
+  config(run);
+  if(startEntry<0)
+    startEntry = gStepRandomSnapshotNextEntry;
+
+  for(int entry = startEntry; entry < gChain->GetEntries(); entry++) {
+
+    int maxY = 0;
+    int minY = 1e5; 
+    int minX = -100;
+    int sumsum = 0;
+    double avg = 0;
+    double lped = 0;
+    gChain->GetEntry(entry);
+    if(numSamples>maxSamples)
+      numSamples = maxSamples;
+    if(randomTime==1) {
+      gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
+            ,run,entry,mpsCoda,entry,snapClock,test15),
+          numSamples,0,numSamples);
+      gHist->SetStats(false);
+      lped = 0.;
+      for(int s = 0; s < 30; s++) {
+        lped += snap[s];
+      }
+      lped /= 30.;
+      for(int s = 0; s < numSamples && s < maxSamples; s++) {
+        gHist->SetBinContent(s+1,snap[s]);
+        //sumsum += snap[s];
+        sumsum += lped-snap[s];
+        avg += snap[s];
+        //lped+= kGlobalPed;
+        if ( minY > snap[s] ) {
+           minY = snap[s];
+           minX = s;
+        }
+        if ( maxY < snap[s] ) {
+           maxY = snap[s];
+        }
+      }
+      avg /= Double_t(numSamples);
+      //sumsum=lped-sumsum;
+      gHist->Draw();
+      gStepRandomSnapshotNextEntry=entry+1;
+      //std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(835381- sumsum) << std::endl;
+      std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(sumsum)  << ", avg: " << avg << std::endl;
+      return;
+    }
+  }
+ std::cout << "Apparently nothing got plotted" << std::endl;
+}
+
 
 int gStepTriggSnapshotNextEntry = 1;
 void stepTrigSnapshot(int run, int startEntry = -1)
@@ -255,7 +310,8 @@ void stepTrigSnapshot(int run, int startEntry = -1)
     gChain->GetEntry(entry);
     if(numSamples>maxSamples)
       numSamples = maxSamples;
-    if(randomTime==0) {
+    if(randomTime==0 && snapClock < 1666000) {
+      std::cerr << "SnapClock = " << snapClock << std::endl;
       gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
             ,run,entry,mpsCoda,entry,snapClock,test15),
           numSamples,0,numSamples);

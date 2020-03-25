@@ -1,5 +1,8 @@
 #!/bin/bash
 
-for ((run = $1; run <= $2; run++)); do
-  ./online.sh -r $run --nopanguin --webupload &
+add=20
+end=$(( $1 + $add ))
+
+for ((run = $1; run <= $end; run++)); do
+  ./online.sh -r $run &
 done

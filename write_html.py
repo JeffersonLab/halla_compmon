@@ -58,7 +58,10 @@ dvcs_run_hi = 3108
 test_run_lo = dvcs_run_lo + 1
 test_run_hi = 4231
 prex_run_lo = test_run_hi + 1
-prex_run_hi = 9999
+prex_run_hi = 4622
+test2_run_lo = prex_run_hi + 1
+test2_run_hi = 4808
+crex_run_lo = test2_run_hi + 1
 
 #Steps
 #1. Open HTML file
@@ -78,9 +81,29 @@ prex_run_hi = 9999
 #Run limits:
 #2063 - 3108 = DVCS
 #3109 - 4231 = Tests
-#4232 - ???? = PREX
+#4232 - 4622 = PREX
+#4623 - 4808 = More tests
+#4809 - ???? = CREX
 
-def create_plot_list(runs_to_write):
+def expt_name(run_mode):
+  if run_mode == 'crex': return 'CREX'
+  else: return 'PREX'
+
+def url_str(run_mode):
+  if run_mode == 'crex': return 'crex'
+  else: return 'prex2'
+
+def main_body(run_mode):
+  main_str = '<body>\n'
+  main_str += '  <title>' + expt_name(run_mode) + ' Compton Analysis Plots </title>\n'
+  main_str += '  <h1>Compton </h1>\n'
+  main_str += '  <hr>\n'
+  main_str += '  <p>\n'
+  main_str += '    <h2>' + expt_name(run_mode) + 'Compton Online Plots</h2>\n'
+  main_str += '  </p>\n'
+  return main_str
+
+def create_plot_list(run_mode, runs_to_write):
   list_elements = 3*spaces + '<ul>\n'
   list_files = [('snapshots.pdf', 'Snapshot Plots'), 
                 ('sums.pdf', 'Triggered Sums'), 
@@ -89,22 +112,20 @@ def create_plot_list(runs_to_write):
                 ('asym_hists.pdf', 'Quartet Histograms'),
                 ('q_graphs.pdf', 'Quartet Vars vs Time')]
   for run in runs_to_write:
-    list_elements += 4*spaces + '<li>Run ' + str(run) + ': &ensp;\n'
+    list_elements += 4*spaces + '<li><a href=\'runs/Run' + str(run) + '/\'>Run ' + str(run) + '</a>: &ensp;\n'
     for data in list_files:
       list_elements += 5*spaces + '<a href=\'runs/Run' + str(run) + '/' + data[0] + '\'>' + data[1] + '</a>&ensp;\n'
     list_elements += 4*spaces + '</li>\n'
   return list_elements + 3*spaces + '</ul>\n'
 
-def create_prex_plot_list(runs_to_write):
+def create_prex_plot_list(run_mode, runs_to_write):
   list_files = [('ess_stats.pdf', 'Essential Stats'),
                 ('snapshots.pdf', 'Snapshot Plots'), 
                 ('sums.pdf', 'Triggered Sums'), 
                 ('acc0.pdf', 'Acc0/NAcc0'), 
-                ('acc0_time.pdf', 'Acc0/NAcc0 vs Time'),
-                ('asym_acc0_hists.pdf', 'Multiplet Acc0 Histograms'),
-                ('q_acc0_graphs.pdf', 'Multiplet Acc0 Vars vs Time'),
-				        ('asym_acc4_hists.pdf', 'Multiplet Acc4 Histograms'),
-				        ('q_acc4_graphs.pdf', 'Multiplet Acc4 Vars vs Time'),
+                ('quartet.pdf', 'Multiplet Variables'),
+                ('asymmetries.pdf', 'Multiplet Asymmetries'),
+                ('backgrounds.pdf', 'Background Detectors'),
                 ('cycle_qVars.pdf', 'Laser Cycles')]
   snail_list = os.listdir(os.environ['COMPMON_SNAILS']);
   snail_list_trim = []
@@ -114,8 +135,12 @@ def create_prex_plot_list(runs_to_write):
   snails_and_runs = []
   snail_strs = {}
   for snail in snail_list:
-   # print(snail)
-    title = "Snail " + snail.replace("snail", "").replace(".list", "")
+    snail_num = int(snail.replace("snail", "").replace(".list", ""))
+    if (snail_num > 40 and snail_num != 500) and run_mode == 'prex': continue
+    elif (snail_num <= 40 or snail_num == 500) and run_mode == 'crex': continue
+    title = "Snail " + str(snail_num)
+    if snail_num == 150 or snail_num == 151 or snail_num == 159 or snail_num == 160: 
+      title += ' (Snail taken with cavity DOCP < 100%! Polarizations are systematically affected!!!)'
     snail_data = [title]
     snail_file = open(os.environ['COMPMON_SNAILS'] + '/' + snail)
     for line in snail_file.readlines():
@@ -124,6 +149,7 @@ def create_prex_plot_list(runs_to_write):
     snail_data += [False]
     snails_and_runs += [snail_data]
     snail_strs[title] = 3*spaces + '<h4>' + title + '</h4>\n' + 3*spaces + '<ul>\n'
+  print('Found data in ' + str(len(snail_strs)) + ' snails')
   
   for run in runs_to_write:
     for snail in snails_and_runs:
@@ -140,19 +166,23 @@ def create_prex_plot_list(runs_to_write):
         snail_strs[snail[0]] += 4*spaces + '</li>\n'
         snail[-1] = True
       if run in snail:
-        snail_strs[snail[0]] += 4*spaces + '<li>Run ' + str(run) + ': &ensp;\n'
+        snail_strs[snail[0]] += 4*spaces + '<li><a href=\'runs/Run' + str(run) + '/\'>Run ' + str(run) + '</a>: &ensp;\n'
         for data in list_files:
           snail_strs[snail[0]] += 5*spaces + '<a href=\'runs/Run' + str(run) + '/' + data[0] + '\'>' + data[1] + '</a>&ensp;\n'
         snail_strs[snail[0]] += 4*spaces + '</li>\n'
   
+  run_count = 0
+  for snail in snails_and_runs:
+    run_count += len(snail[1:-1])
+  print('Trimmed down to ' + str(run_count) + ' runs')
   data_str = ''
   for snail in snails_and_runs:
     data_str += snail_strs[snail[0]] + 3*spaces + '</ul>\n'
   return data_str
 
-def create_end_block(date, time):
+def create_end_block(run_mode, date, time):
   block_str = 2*spaces + '<hr>\n'
-  block_str += 2*spaces + '<a href=\'https://hallaweb.jlab.org/parity/prex/onlinePlots/\'>Online Plots</a>&ensp;\n'
+  block_str += 2*spaces + '<a href=\'https://prex.jlab.org/analysis/' + url_str(run_mode) + '/\'>Online Plots</a>&ensp;\n'
   block_str += 2*spaces + '<hr>\n'
   block_str += 2*spaces + 'Web page last edited: ' + date + ' at ' + time + '<br>\n'
   block_str += spaces + '</body>\n</html>'
@@ -165,6 +195,10 @@ def write_html():
   time = sys.argv[2]
   fname = sys.argv[3]
   comp_web_path = os.environ["COMPMON_WEB"]
+  print("Editing files in " + comp_web_path)
+  run_mode = 'prex'
+  if 'crex' in comp_web_path: run_mode = 'crex'
+  
   f = open(comp_web_path + "/" + fname)
   html = f.read()
   blocks = html.split(split_str)
@@ -176,18 +210,25 @@ def write_html():
     elif dvcs_run_lo <= run_num <= dvcs_run_hi: dvcs_runs += [run_num]
     elif test_run_lo <= run_num <= test_run_hi: test_runs += [run_num]
     elif prex_run_lo <= run_num <= prex_run_hi: prex_runs += [run_num]
+    elif crex_run_lo <= run_num: prex_runs += [run_num]
     else: continue
+  print('Found ' + str(len(prex_runs)) + ' production runs in mode ' + run_mode)
   dvcs_runs.sort(); test_runs.sort(); prex_runs.sort()
   dvcs_runs.reverse(); test_runs.reverse(); prex_runs.reverse()
-  dvcs_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>DVCS Runs</h3>\n' + create_plot_list(dvcs_runs) + 2*spaces + '</div>\n'
-  test_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>Test Runs</h3>\n' + create_plot_list(test_runs) + 2*spaces + '</div>\n'
-  prex_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>PREX Runs</h3>\n' + create_prex_plot_list(prex_runs) + 2*spaces + '</div>\n'
+  #dvcs_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>DVCS Runs</h3>\n' + create_plot_list(dvcs_runs) + 2*spaces + '</div>\n'
+  #test_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>Test Runs</h3>\n' + create_plot_list(test_runs) + 2*spaces + '</div>\n'
+  data_section = create_prex_plot_list(run_mode, prex_runs)
+  if data_section == '' or data_section == '\n':
+    data_section = 3*spaces + 'No runs to report yet!\n'
+  prex_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>' + expt_name(run_mode) + ' Runs</h3>\n' \
+                + 3*spaces + '<a href=\'http://prex.jlab.org/analysis/' + url_str(run_mode) + '/compton/runs/\'>All Runs</a>&ensp;\n' \
+                + data_section + 2*spaces + '</div>\n'
   #list_block = prex_block + test_block + dvcs_block
   list_block = prex_block
   f.close();
   
-  all_data = header_str + split_str + style_str + split_str + main_body_str + split_str
-  all_data += list_block + split_str + create_end_block(date, time)
+  all_data = header_str + split_str + style_str + split_str + main_body(run_mode) + split_str
+  all_data += list_block + split_str + create_end_block(run_mode, date, time)
 
   fout = open(comp_web_path + "/" + fname, 'w+')
   fout.write(all_data + '\n')

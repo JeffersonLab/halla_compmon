@@ -10,14 +10,40 @@
 
 using namespace std;
 
-bool isValidCycle(int *cycleInds, vector<int> section1, vector<int> section2, vector<int> section3){
+vector<vector<int>> readEventCuts(int runNum){
+  vector<vector<int>> eventCuts;
+  ifstream mapfile(Form("%s/compmon_event_cuts_%i.map", getenv("COMPMON_MAPS"), runNum));
+  if(!mapfile.good()){return eventCuts;}
+  string readStr;
+  while(getline(mapfile, readStr)){
+    vector<int> cutRegion; stringstream ss(readStr);
+    for(int i; ss >> i;){
+      cutRegion.push_back(i);
+      if(ss.peek() == ',')
+        ss.ignore();
+    }
+  }
+  return eventCuts;
+}
+
+bool isValidCycle(int *cycleInds, vector<int> section1, vector<int> section2, vector<int> section3, int runNum){
   int diff1 = section2[0] - section1[0];
   int diff2 = section3[0] - section2[0];
   bool temporallyLocked = diff1 == 1 && diff2 == 1;
   bool correctPattern = section1[1] == 0 && section2[1] == 1 && section3[1] == 0;
+  vector<vector<int>> eventCuts = readEventCuts(runNum);
+  bool noEventCuts = true;
+  for(vector<int> cut : eventCuts){
+    noEventCuts = noEventCuts && ((cut[0] <= section1[0] && cut[1] >= section1[0]) || 
+                                  (cut[0] <= section3[1] && cut[1] >= section3[1]) || 
+                                  (cut[0] <= section1[0] && cut[1] >= section3[1]));
+  }
+  if(!noEventCuts){
+    printf("Applied event cuts on run %i\n", runNum);
+  }
   //cout<<"Diff1: "<<diff1<<"; Diff2: "<<diff2<<"; section1: "<<section1[1]<<"; section2: "<<section2[1]<<
   //" section3: "<<section3[1]<<"; Final bool: "<<(temporallyLocked && correctPattern)<<endl;
-  return temporallyLocked && correctPattern;
+  return temporallyLocked && correctPattern && noEventCuts;
 }
 
 bool indsAreValid(int *cycleInds){
@@ -56,6 +82,7 @@ vector<vector<int>> refineCycles(vector<vector<int>> cycles){
   vector<vector<int>> shortCycles;
 
   for(int i = 0; i < cycles.size(); i++){
+    printf("Cut vars for period %i - status: %i, beamOffFraction %.4f\n", cycles[i][0], cycles[i][9], cycles[i][6]*1.0/cycles[i][4]);
     if(cycles[i][9] == 1 && cycles[i][6]*1.0/cycles[i][4] < 0.2){
       shortCycles.push_back(cycles[i]);
     }
@@ -64,7 +91,7 @@ vector<vector<int>> refineCycles(vector<vector<int>> cycles){
   return shortCycles;
 }
 
-vector<vector<int>> defineCycles(vector<vector<int>> cycles){
+vector<vector<int>> defineCycles(vector<vector<int>> cycles, int runNum){
   vector<vector<int>> finalCycles;
   vector<int> currentCycle;
 
@@ -87,7 +114,7 @@ vector<vector<int>> defineCycles(vector<vector<int>> cycles){
       }
       else{
         cycleInds[2] = i;
-        if(indsAreValid(cycleInds) && isValidCycle(cycleInds, cycles[cycleInds[0]], cycles[cycleInds[1]], cycles[cycleInds[2]])){
+        if(indsAreValid(cycleInds) && isValidCycle(cycleInds, cycles[cycleInds[0]], cycles[cycleInds[1]], cycles[cycleInds[2]], runNum)){
           int startEvt = (cycles[cycleInds[0]][2] + cycles[cycleInds[0]][3])/2;
           int finalEvt = (cycles[cycleInds[2]][2] + cycles[cycleInds[2]][3])/2;
           currentCycle.push_back(startEvt); currentCycle.push_back(cycles[cycleInds[0]][3]);
@@ -98,7 +125,7 @@ vector<vector<int>> defineCycles(vector<vector<int>> cycles){
           cout<<"Cycle IDs: "<<cycles[cycleInds[0]][0]<<", "<<cycles[cycleInds[1]][0]<<", "<<cycles[cycleInds[2]][0]<<endl;
           cycleInds[0] = i; cycleInds[1] = -1; cycleInds[2] = -1;
         }
-        else if(indsAreValid(cycleInds) && not isValidCycle(cycleInds, cycles[cycleInds[0]], cycles[cycleInds[1]], cycles[cycleInds[2]]) && cycles[i][1] == 0){
+        else if(indsAreValid(cycleInds) && not isValidCycle(cycleInds, cycles[cycleInds[0]], cycles[cycleInds[1]], cycles[cycleInds[2]], runNum) && cycles[i][1] == 0){
           cycleInds[0] = i; cycleInds[1] = -1; cycleInds[2] = -1;
         }
         else{
@@ -119,7 +146,7 @@ void laserCycles(int snail_num){
   ifstream infile(Form("%s/snail%i.list", getenv("COMPMON_SNAILS"), snail_num));
   while(getline(infile, run_num_str)){
     int run_num = atoi(run_num_str.c_str());
-    vector<vector<int>> cycles = defineCycles(refineCycles(readCycles(run_num)));
+    vector<vector<int>> cycles = defineCycles(refineCycles(readCycles(run_num)), run_num);
     cout<<"Identified "<<cycles.size()<<" laser cycles."<<endl;
 
     ofstream output;
@@ -128,7 +155,7 @@ void laserCycles(int snail_num){
       output<<cycles[cycle][0]<<","<<cycles[cycle][1]<<","<<cycles[cycle][2]<<","<<cycles[cycle][3]<<","<<cycles[cycle][4]<<","<<cycles[cycle][5]<<endl;
     }
     output.close();
-    cout<<"Created file "<<Form("%s/minirun_%i.dat", getenv("COMPMON_MINIRUNS"), run_num)<<endl;
+    cout<<"Created file "<<Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), run_num)<<endl;
   }
   infile.close();
 }

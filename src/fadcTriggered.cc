@@ -114,6 +114,7 @@ int fadcTriggered::DefineTriggeredTree(){
   triggerWiseTree->Branch("sumPost",&sumPost,0);
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(triggerWiseTree);
+  theStatus->DefineScalerBranches(triggerWiseTree);
   //
   // data for sampled waveforms
   snapshotsTree=new TTree("snapshots","sampled snapshops");
@@ -125,6 +126,7 @@ int fadcTriggered::DefineTriggeredTree(){
   //snapshotsTree->Branch("bcm",&bcm,"bcm/F");
   //now add on variables from comptonStatus 
   theStatus->DefineStatusBranches(snapshotsTree);
+  theStatus->DefineScalerBranches(snapshotsTree);
   //
   // now special tree for MiniMegan pulser data
   pulserWiseTree=new TTree("pulserwise","MiniMegan pulser-wise data");
@@ -137,6 +139,7 @@ int fadcTriggered::DefineTriggeredTree(){
   pulserWiseTree->Branch("synchIndex",&MMSynchIndex,"synchIndex/I");
   pulserWiseTree->Branch("synchIndexClock",&MMSynchIndexClock,"synchIndexClock/I");
   theStatus->DefineStatusBranches(pulserWiseTree);
+  theStatus->DefineScalerBranches(pulserWiseTree);
   return 0;
 }
 void fadcTriggered::labelSpinSortedHistos(TH1F* histo){

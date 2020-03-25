@@ -37,5 +37,8 @@ void plotPanguin(int run_num, int id){
   else if(id == 13){asym_pad(f, run_num, output_path, myPad, 4);}
   else if(id == 14){asym_graph_pad(f, run_num, output_path, myPad, 4);}
   else if(id == 15){beam_off_quartet_pad(f, run_num, output_path, myPad);}
+  else if(id == 16){detector_rates(f, run_num, output_path, myPad);}
+  else if(id == 17){detector_asyms(f, run_num, output_path, myPad);}
+  else if(id == 18){essential_stats_2_pad(f, run_num, output_path, myPad);}
   else{printf("Nothing to plot.");}
 }

@@ -15,7 +15,8 @@
 
 Double_t get_analyzing_power(int run_num){
   if(run_num < 3800){return 0.1105;}
-  else if(run_num >= 4232){return 0.01655915;}
+  else if(run_num >= 4232 && run_num <= 4929){return 0.01655915;}
+  else if(run_num >= 4930){return 0.036017934;}
   else{
     printf("Run doesn't have a defined analyzing power.\n");
     return 0.0;
@@ -170,7 +171,7 @@ void minirunAnalysis(TString snail_fname, int acc){
   int tot_miniruns = 1;
   for(int run = 0; run < all_runs.size(); run++){
     for(int minirun = 0; minirun < all_runs[run].size(); minirun++){
-      int factor = 1;
+      int factor = 1; TString ihwp_state("UNK");
       TFile *f = TFile::Open(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), all_runs[run][minirun][0]));
       TTree *quartetwise = (TTree *)f->Get("quartetwise");
       TString diff("PosHelAcc0/PosHelNSamples0 - NegHelAcc0/NegHelNSamples0"); 
@@ -195,8 +196,8 @@ void minirunAnalysis(TString snail_fname, int acc){
       quartetwise->Draw("epics_ihwp_in>>h_ihwp", "", "goff");
       TH1F *h_ihwp = (TH1F *)gDirectory->Get("h_ihwp");
       Double_t ihwp_in = h_ihwp->GetMean();
-      if(ihwp_in >= 0.95){factor = 1;}
-      else if(ihwp_in <= 0.05){factor = -1;}
+      if(ihwp_in >= 0.95){factor = 1; ihwp_state = "IN";}
+      else if(ihwp_in <= 0.05){factor = -1; ihwp_state = "OUT";}
       else{cout<<"IHWP State changed mid run! Happened during run "<<all_runs[run][minirun][0]<<"!"<<endl; exit(0);}
 
       TH1F *hON_Diff = (TH1F *)gDirectory->Get(hON_NameDiff.Data()); TH1F *hOFF_Diff = (TH1F *)gDirectory->Get(hOFF_NameDiff.Data());
@@ -213,7 +214,7 @@ void minirunAnalysis(TString snail_fname, int acc){
       Double_t vSubAsym = vSubDiff/vSubSum; Double_t vSubAsymE = vSubAsym*TMath::Sqrt(TMath::Power(vSubSumE/vSubSum, 2) + TMath::Power(vSubDiffE/vSubDiff, 2));
       Double_t pol = vSubAsym/get_analyzing_power(all_runs[run][minirun][0]); Double_t polE = vSubAsymE/get_analyzing_power(all_runs[run][minirun][0]);
 
-      cout<<"Run: "<<all_runs[run][minirun][0]<<", Minirun: "<<all_runs[run][minirun][1]<<"; Start Evt: "<<all_runs[run][minirun][2]<<"; End Evt: "<<all_runs[run][minirun][3]<<"; IHWP Factor: "<<factor<<endl;
+      cout<<"Run: "<<all_runs[run][minirun][0]<<", Minirun: "<<all_runs[run][minirun][1]<<"; Start Evt: "<<all_runs[run][minirun][2]<<"; End Evt: "<<all_runs[run][minirun][3]<<"; IHWP: "<<ihwp_state.Data()<<endl;
       hAsym->SetBinContent(tot_miniruns, 1000*vSubAsym); hAsym->SetBinError(tot_miniruns, 1000*vSubAsymE);
       hAsym->GetXaxis()->SetBinLabel(tot_miniruns, Form("%i.%i", all_runs[run][minirun][0], all_runs[run][minirun][1]));
       hPol->SetBinContent(tot_miniruns, 100*pol); hPol->SetBinError(tot_miniruns, 100*polE);
@@ -230,7 +231,7 @@ void minirunAnalysis(TString snail_fname, int acc){
   ptPol->AddText(Form("--------Polarization--------"));
   ptPol->AddText(Form("%.3f%% +/- %.3f",fconstPol->GetParameter(0), fconstPol->GetParError(0)));
   ptPol->AddText(Form("Rel. Err: %.3f%%", fconstPol->GetParError(0)*100.0/fconstPol->GetParameter(0)));
-  ptPol->AddText(Form("Assumed An. Pow: %.5f", get_analyzing_power(4300)));
+  //ptPol->AddText(Form("Assumed An. Pow: %.5f", get_analyzing_power(4300)));
   ptPol->AddText(Form("Chi^2 / ndf: %f / %d", fconstPol->GetChisquare(), fconstPol->GetNDF()));
   ptPol->SetBorderSize(1); ptPol->SetFillColor(0);
   hPol->Draw("P");
@@ -302,10 +303,10 @@ void cycleAnalysis(TString snail_fname, int acc){
   TF1 *fconstOffSum = new TF1(Form("fConstOffSum_acc%i", acc), "pol0");
   TPaveText *ptOffSum = new TPaveText(0.7, 0.75, 0.98, 0.92, "blNDC");
 
-  int tot_miniruns = 1;
+  int tot_miniruns = 1; bool same_ihwp_state = true; int ihwp_const = -1;
   for(int run = 0; run < all_runs.size(); run++){
     for(int minirun = 0; minirun < all_runs[run].size(); minirun++){
-      int factor = 1;
+      int factor = 1; TString ihwp_state("UNK");
       TFile *f = TFile::Open(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), all_runs[run][minirun][0]));
       TTree *quartetwise = (TTree *)f->Get("quartetwise");
       TString diff("PosHelAcc0/PosHelNSamples0 - NegHelAcc0/NegHelNSamples0"); 
@@ -331,9 +332,16 @@ void cycleAnalysis(TString snail_fname, int acc){
       quartetwise->Draw("epics_ihwp_in>>h_ihwp", "", "goff");
       TH1F *h_ihwp = (TH1F *)gDirectory->Get("h_ihwp");
       Double_t ihwp_in = h_ihwp->GetMean();
-      if(ihwp_in >= 0.95){factor = 1;}
-      else if(ihwp_in <= 0.05){factor = -1;}
+      if(ihwp_in >= 0.95){factor = 1; ihwp_state = "IN";}
+      else if(ihwp_in <= 0.05){factor = -1; ihwp_state = "OUT";}
       else{cout<<"IHWP State changed mid run! Happened during run "<<all_runs[run][minirun][0]<<"!"<<endl; exit(0);}
+      if(run == 0 && minirun == 0){
+        ihwp_const = (int)(0.5*(factor + 1));
+      }
+      else{
+        if(ihwp_const == 0 && factor == 1){same_ihwp_state = false;}
+        else if(ihwp_const == 1 && factor == -1){same_ihwp_state = false;}
+      }
 
       TH1F *hON_Diff = (TH1F *)gDirectory->Get(hON_NameDiff.Data()); TH1F *hOFF_Diff = (TH1F *)gDirectory->Get(hOFF_NameDiff.Data());
       TH1F *hON_Summ = (TH1F *)gDirectory->Get(hON_NameSumm.Data()); TH1F *hOFF_Summ = (TH1F *)gDirectory->Get(hOFF_NameSumm.Data());
@@ -358,6 +366,14 @@ void cycleAnalysis(TString snail_fname, int acc){
     }
   }
   
+  if(same_ihwp_state){
+    TString state = (ihwp_const == 1) ? "IHWP IN" : "IHWP OUT";
+    hPol->SetTitle(Form("Polarization by cycle: %s (Acc%i, %s)", snail_fname.Data(), acc, state.Data()));
+    hAsym->SetTitle(Form("Asymmetry by cycle: %s (Acc%i, %s)", snail_fname.Data(), acc, state.Data()));
+  }
+  else{
+    printf("Could not see a common ihwp state!\n");
+  }
   pPol1->cd();
   hPol->SetStats(kFALSE);
   hPol->GetXaxis()->LabelsOption("v");
@@ -365,7 +381,7 @@ void cycleAnalysis(TString snail_fname, int acc){
   ptPol->AddText(Form("--------Polarization--------"));
   ptPol->AddText(Form("%.3f%% +/- %.3f",fconstPol->GetParameter(0), fconstPol->GetParError(0)));
   ptPol->AddText(Form("Rel. Err: %.3f%%", fconstPol->GetParError(0)*100.0/fconstPol->GetParameter(0)));
-  ptPol->AddText(Form("Assumed An. Pow: %.5f", get_analyzing_power(4300)));
+  //ptPol->AddText(Form("Assumed An. Pow: %.5f", get_analyzing_power(4300)));
   ptPol->AddText(Form("Chi^2 / ndf: %f / %d", fconstPol->GetChisquare(), fconstPol->GetNDF()));
   ptPol->SetBorderSize(1); ptPol->SetFillColor(0);
   hPol->Draw("P");

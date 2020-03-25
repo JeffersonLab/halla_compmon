@@ -38,7 +38,8 @@ bool kPrintPatternHistory = false;
 const int kPrintLaserCycleDetails = true;
 bool kPrintIntermediateCycleInfo = true;
 bool kPrintBCMResults = false;
-bool kSaveGraphs = true;
+//bool kSaveGraphs = true; Commented until graphs are fixed
+bool kSaveGraphs = false;
 bool kAllowBeamOffCycles = true;
 const int kMaxAccCount = 100e3;
 const int kMinCycleCounts = 10*30;
@@ -57,7 +58,8 @@ const double kAvgMPSTimeDeviation = 0.00002;  // seconds
 const bool kBCMNormalizeMPSLevel = false;
 const int kMinCycleBeamOff = 30;
 const int kMinCycleBeamOn = 300;
-const int kMinCycleMpsCount = 30*240/8.; // 30 seconds
+//const int kMinCycleMpsCount = 30*240/8.; // 30 seconds
+const int kMinCycleMpsCount = 10*120./4.; // 10 seconds
 
 const char *kHelTreeName[2] = {"Neg", "Pos" };
 const int kNAccums = 6;
@@ -1186,7 +1188,7 @@ bool init(int run, bool readCyclesFromFile)
   gChainSnapshots->SetBranchStatus("snap",1);
   gChainSnapshots->SetBranchStatus("snapClock",1);
   gChainSnapshots->SetBranchStatus("mpsCoda",1);
-  gChainSnapshots->SetBranchStatus("bcm",1);
+  //gChainSnapshots->SetBranchStatus("bcm",1);
   gChainSnapshots->SetBranchStatus("beamState",1);
   gChainSnapshots->SetBranchStatus("laserState",1);
   gChainSnapshots->SetBranchStatus("randomTime",1);
@@ -1195,7 +1197,7 @@ bool init(int run, bool readCyclesFromFile)
   gChainSnapshots->SetBranchAddress("snap",&snap);
   gChainSnapshots->SetBranchAddress("snapClock",&snapClock);
   gChainSnapshots->SetBranchAddress("mpsCoda",&mpsCodaSnapshots);
-  gChainSnapshots->SetBranchAddress("bcm",&bcmSnapshots);
+  //gChainSnapshots->SetBranchAddress("bcm",&bcmSnapshots);
   gChainSnapshots->SetBranchAddress("beamState",&beamStateSnapshots);
   gChainSnapshots->SetBranchAddress("laserState",&laserStateSnapshots);
   gChainSnapshots->SetBranchAddress("randomTime",&randomTime);

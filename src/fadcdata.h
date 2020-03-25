@@ -34,9 +34,9 @@ class fadcdata {
     int SamplesPerEvent[MAX_FADC_CHANNELS];
     int samplepointer[MAX_FADC_CHANNELS];
     int  UnpackedClock[MAX_FADC_CHANNELS][MAX_FADC_EVENTS];
-    double mpsTriggerPedestal;
-    double mpsRandomPedestal;
-    double mpsPedestal;
+    double mpsTriggerPedestal[MAX_FADC_CHANNELS];
+    double mpsRandomPedestal[MAX_FADC_CHANNELS];
+    double mpsPedestal[MAX_FADC_CHANNELS];
     //
     // stuff from  "sums" subbank
     int Sums_InputRegister;
@@ -134,9 +134,9 @@ class fadcdata {
       return Sums_PulserSynch2[trigger];}; //return clock time
     int GetCRLVersion() { return crlVersion; }
     int GetWaveformReadoutVersion() { return newWaveformReadout; }
-    double GetMPSTriggerPedestal() { return mpsTriggerPedestal;};
-    double GetMPSRandomPedestal() { return mpsRandomPedestal;};
-    double GetMPSPedestal() { return mpsPedestal;};
+    double GetMPSTriggerPedestal(int ch) { return mpsTriggerPedestal[ch];};
+    double GetMPSRandomPedestal(int ch) { return mpsRandomPedestal[ch];};
+    double GetMPSPedestal(int ch) { return mpsPedestal[ch];};
     int GetRandomPreSums(int channel,int trigger){
       return Sums_RandomPreData[channel][trigger];}; // pre pulse summs
     int GetRandomSums(int channel,int trigger){

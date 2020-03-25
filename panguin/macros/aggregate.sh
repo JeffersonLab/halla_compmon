@@ -21,10 +21,10 @@ if [ ! -d $COMPMON_WEB/snails/snail$snail_num ]; then
   mkdir $COMPMON_WEB/snails/snail$snail_num
 fi
 
-root -l -b -q miniruns.C\(\"snail${snail_num}\"\)
+#root -l -b -q miniruns.C\(\"snail${snail_num}\"\)
 root -l -b -q laserCycles.C\(${snail_num}\)
-root -l -b -q aggregate.C\(\"snail${snail_num}\"\)
-root -l -b -q aggregate.C\(\"snail${snail_num}\",4\)
+#root -l -b -q aggregate.C\(\"snail${snail_num}\"\)
+#root -l -b -q aggregate.C\(\"snail${snail_num}\",4\)
 root -l -b -q aggregate.C\(\"snail${snail_num}\",0,1\)
 root -l -b -q aggregate.C\(\"snail${snail_num}\",4,1\)
 

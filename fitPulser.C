@@ -26,6 +26,7 @@ arrays and messes with them. */
 #include <iostream>
 #include <fstream>
 #include "TMath.h"
+#include "LED/MiniMegan.h"
 
 Double_t Delta; 
 int params;
@@ -69,6 +70,14 @@ Double_t fcn(Double_t *x, Double_t *par){
   return value;
 }
 
+Double_t fcnDelta(Double_t *x, Double_t *par) {
+  Double_t value=params>0 ? par[0]: 0.0;
+  for(int i = 1; i < params; i++) {
+    value += par[i]*pow(x[0],i);
+  }
+  return value;
+};
+
 
 Double_t draw_fd(Double_t del, Double_t alpha, Double_t beta, Double_t gamma){
 /*
@@ -111,6 +120,26 @@ Double_t deriv(Double_t x, Double_t *par){
   return value;
 }
 
+void saveGraph(TGraphErrors *gr)
+{
+  //TGraphErrors *gr = (TGraphErrors*)gROOT->FindObject(name);
+  if(gr!=0) {
+    fstream outfile;
+    outfile.open(Form("LED/results/run%d_graph.dat",MM::gCurrentRun),std::ios::out);
+    int n = gr->GetN();
+    Double_t *xvals = gr->GetX();
+    Double_t *yvals = gr->GetY();
+    Double_t *xerrs = gr->GetEX();
+    Double_t *yerrs = gr->GetEY();
+    for(int i = n-1; i>-0; i--) {
+      outfile << Form("%10.5f  %10.6f  %10.6f  %10.6f\n",xvals[i],xerrs[i],yvals[i],yerrs[i]);
+    }
+    outfile.close();
+  } else {
+    std::cout << "No graph found!" << std::endl;
+  }
+}
+
 
 double computeDiffNonLin( Double_t *par, int npar, double x)
 {
@@ -143,6 +172,17 @@ double computeDiffNonLinWErr( Double_t *par, int npar, double x, double *perrs, 
 
 
 void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF, int halfGain = 0){
+
+  bool doDarkDelta = false;
+  int orig_numparams=numparams;
+  if(numparams<=0) {
+    doDarkDelta = true;
+    if(numparams==0) {
+      numparams=-1;
+    }
+    //numparams = -1-numparams;
+    numparams = -numparams;
+  }
 
 // Fits 'gr' filled by plotPulser.C
 
@@ -192,8 +232,9 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
   Double_t Asum=0, Bsum=0,Csum=0,Dsum=0,Esum=0,det,xi,yi,w;
 
   for(int ipt=0;ipt<range;ipt++){
-    finiteDifferencesc[ipt]=finiteDifferencesc[ipt]-cross_LSF*Responsesc[ipt];
-    if(numparams==0){
+    //finiteDifferencesc[ipt]=finiteDifferencesc[ipt]-cross_LSF*Responsesc[ipt];
+    finiteDifferencesc[ipt]=finiteDifferencesc[ipt]-MM::crossTalk(Responsesc[ipt]);
+    if(doDarkDelta){
       xi=Responsesc[ipt];
       yi=finiteDifferencesc[ipt];
       w=1/Yerrsc[ipt]/Yerrsc[ipt];
@@ -206,7 +247,7 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
   }
 
   Double_t LSFm, LSFb,Sigmam,Sigmab,chi2lsf;
-  if(numparams==0){
+  if(doDarkDelta){
     det=Asum*Csum-Bsum*Bsum;
     LSFm=(Csum*Dsum-Bsum*Esum)/det;
     LSFb=(Asum*Esum-Bsum*Dsum)/det;
@@ -233,10 +274,14 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
 
   Double_t high = Responsesc[0];
   high = kResponseComptonEdge[halfGain];
-  high = histoVarCE->GetMean();
+  //high = histoVarCE->GetMean();
+  high = MM::gVarCE;
   Double_t DeltaInit = finiteDifferencesc[0]/high;
   Double_t LastDelta = 0;
   Delta = DeltaInit;
+  if(doDarkDelta) {
+    Delta = 0.0;
+  }
 
   Double_t newy0 = -1;
   Double_t y0 = 0;
@@ -244,6 +289,10 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
   Double_t parError[numpar];//=0;
   Double_t chi2 = 0;
   Double_t oldchi2 = -1;
+  // Initialize par and parError so that they are not junk
+  for(int i = 0; i < numpar; i++) {
+    par[i] = parError[i] = 0.0;
+  }
 
   Double_t eDeposited[n];// = 0;
   Double_t eDepLast[n];// = 0;
@@ -256,13 +305,18 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
     xerr[j] = 0;
   }  
 
-  if(numparams==0){
+  if(doDarkDelta){
     printf("LSF: M=%f+/-%f, b=%f+/-%f, chi^2=%f,  chi^2/nu=%f\n",
 	 LSFm,Sigmam,LSFb/high,Sigmab/high,chi2lsf,chi2lsf/(range-2));
   }
 
 
-  TF1 *fitFcn = new TF1("fitFcn", fcn, eDeposited[0], eDeposited[n-1], params);
+  TF1 *fitFcn = 0;
+  if(!doDarkDelta) {
+    fitFcn = new TF1("fitFcn", fcn, eDeposited[0], eDeposited[n-1], params);
+  } else {
+    fitFcn = new TF1("fitFcn", fcnDelta, eDeposited[0], eDeposited[n-1], params);
+  }
 
   int xchanged = 0;
   while(abs(chi2-oldchi2)>1e-6 || xchanged){
@@ -289,8 +343,9 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
     grsc->Draw("ap");
     //grsc->Fit("fitFcn","ERQ");    
     grsc->Fit("fitFcn");
+    saveGraph(grsc);
 
-    if(numparams==0){
+    if(doDarkDelta&&false){
       TLine *LSF = new TLine(0.,LSFb/high,eDeposited[0],eDeposited[0]*LSFm+LSFb/high);
       LSF->SetLineColor(kBlue+1);
       LSF->SetLineWidth(3);
@@ -341,9 +396,30 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
   cout<<"Scale factor: "<<high<<endl;
 
 
-  if(numparams==0) {
-    printf("\n\nDark Delta Summary: %f +/- %f [%f%%]\n",
-	 LSFm,Sigmam,(Sigmam/LSFm)*100.);
+  double scaledLight[n];
+  double scaledLightErr[n];
+  for(int i = 0; i < n; i++) {
+    scaledLight[i] = eDeposited[i]/high;
+    scaledLightErr[i] = 0.0;
+  }
+  TH1F *hFitRes = (TH1F*)gROOT->FindObject("hFitRes");
+  if(hFitRes!=0) {
+    delete hFitRes;
+  }
+  if(doDarkDelta) {
+    printf("\n\nDark Delta Summary:");
+    if(numparams==1) { 
+    printf(" %f +/- %f [%f%%]\n(Where CE=%.1f ksrau)",
+	 //LSFm,Sigmam,(Sigmam/LSFm)*100.,MM::gVarCE/1e3);
+	 LSFm,Sigmam,(Sigmam/LSFm)*100.,MM::gVarCE/1e3);
+    } else {
+      printf("\n    gDeltaNpar=%d ;\n",params-1);
+      for(int i = 1; i < params; i++) {
+        printf("    LSFm[%d] = %f ;\n",i-1,par[i]);
+      }
+      printf("(Where CE=%.1f ksrau)\n", MM::gVarCE/1e3);
+    }
+    hFitRes = new TH1F("hFitRes","Fit Residuals (Dark Delta); Residuals [% of CE]",100,-0.3,0.3);
   } else {
     printf("delta fit = % 1.8f +/- % 1.8f\n", par[params-1],parError[params-1]);
     for(Int_t p = 0; p < params-1; p++) {
@@ -353,20 +429,16 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
     }
     double dnLE = 0;
     Double_t dnLsum = computeDiffNonLinWErr(par,params-1,kComptonEdgeScale,parError,dnLE);
-    std::cout << "Diff non-lin: " << 100.*(dnLsum) << "% (+/- " << dnLE*100. << "%) @ CE (" << histoVarCE->GetMean()/1e3 << " ksrau)" << std::endl;
+    std::cout << "Diff non-lin: " << 100.*(dnLsum) << "% (+/- " << dnLE*100. << "%) @ CE (" << MM::gVarCE/1e3 << " ksrau)" << std::endl;
 
     TCanvas *canvDiffLin = (TCanvas*)gROOT->FindObject("canvDiffLin");
     if(canvDiffLin==0) {
       canvDiffLin = new TCanvas("canvDiffLin");
     }
     canvDiffLin->cd();
-    double scaledLight[n];
     double diffNonLins[n];
-    double diffXErr[n];
     double diffYErr[n];
     for(int i = 0; i < n; i++) {
-      scaledLight[i] = eDeposited[i]/high;
-      diffXErr[i] = 0.0;
       if(!kBetterDiffNonLinError) {
         diffNonLins[i] = 100.*computeDiffNonLin(par,params-1,scaledLight[i]);
         diffYErr[i] = 0.0;
@@ -375,8 +447,8 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
         diffYErr[i] = dnLE*100.;
       }
     }
-    
-    TGraphErrors *grDiffNL = new TGraphErrors(n,scaledLight, diffNonLins,diffXErr,diffYErr);
+
+    TGraphErrors *grDiffNL = new TGraphErrors(n,scaledLight, diffNonLins,scaledLightErr,diffYErr);
     grDiffNL->SetTitle("Differential Non Linearity");
     grDiffNL->GetXaxis()->SetTitle("Scaled Light Deposited");
     grDiffNL->GetYaxis()->SetTitle("Differential Non Linearity [%]");
@@ -384,8 +456,45 @@ void fitPulser(int numparams, int startindex, int endindex,  Double_t cross_LSF,
     grDiffNL->GetYaxis()->SetLabelSize(0.03);
     //grDiffNL->SetMarkerStyle(20);
     grDiffNL->Draw("AP");
+    hFitRes = new TH1F("hFitRes","Fit Residuals; Residual [%]",100,-0.5,0.5);
   }
-  
+  TCanvas *canvResiduals = (TCanvas*)gROOT->FindObject("canvResiduals");
+  if(canvResiduals==0) {
+    canvResiduals = new TCanvas("canvResiduals","canvResiduals",500*2,400);
+    canvResiduals->Divide(2,1);
+  }
+  double residuals[n];
+  double residualsErr[n];
+  canvResiduals->cd(2);
+  for(int i = 0; i < n; i++) {
+    if(doDarkDelta) {
+      residuals[i] = 100.*(finiteDifferencesc[i]-fitFcn->Eval(scaledLight[i]));
+      residualsErr[i]=100.*yerr[i];
+    } else {
+      residuals[i] = 100.*(1.-fitFcn->Eval(scaledLight[i])/finiteDifferencesc[i]);
+      residualsErr[i]=100.*(yerr[i]/finiteDifferencesc[i]);
+    }
+    hFitRes->Fill(residuals[i]);
+  }
+  hFitRes->Draw();
+  canvResiduals->cd(1);
+
+
+  TGraphErrors *grRes = new TGraphErrors(n,scaledLight, residuals,scaledLightErr,residualsErr);
+  grRes->SetTitle("Fit Residuals");
+  grRes->GetXaxis()->SetTitle("Scaled Light Deposited");
+  if(!doDarkDelta) {
+    grRes->GetYaxis()->SetTitle("Residual [%]");
+  } else {
+    grRes->GetYaxis()->SetTitle("Residual [% of CE]");
+  }
+  grRes->GetXaxis()->SetLabelSize(0.04);
+  grRes->GetYaxis()->SetLabelSize(0.03);
+  //grRes->SetMarkerStyle(20);
+  grRes->SetMarkerStyle(20);
+  grRes->Draw("AP");
+
+
   printf("\nDone.\n\n");
-  printf("Can re-run again with: .x fitPulser.C(%d,%d,%d,%g,%d)\n",numparams,startindex,endindex,cross_LSF,halfGain!=0?1:0);
+  printf("Can re-run again with: .x fitPulser.C(%d,%d,%d,%g,%d)\n",orig_numparams,startindex,endindex,cross_LSF,halfGain!=0?1:0);
 }
