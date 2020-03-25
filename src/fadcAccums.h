@@ -41,7 +41,7 @@ class fadcAccums {
   void newRun();   //init counters at start of a run
   int DefineHistos();
   int DefineTree();
-  TTree *GetTree() { return mpsWiseTree; } // Useful for when ROOT splits files, to get back the current file
+  TTree *GetTree() { return multipletWiseTree; } // Useful for when ROOT splits files, to get back the current file
   void labelSpinSortedHistos(TH1F* histo);
   int DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata); 
   int BuildMultiplet(); 

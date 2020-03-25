@@ -7,9 +7,13 @@
 #include <fstream>
 #include <TH2F.h>
 
+//const double kGlobalPed=3788.03;
+const double kGlobalPed=3790.17;
+const Float_t kADCToV = (5000.0/4095.);
+
 
 const int kMinSample = 50;
-const int kMaxSample = 200;
+const int kMaxSample = 200*1000;
 const int kMinCheckSample = 25;
 const int kMaxCheckSample = 275;
 const double kMaxSampleDeviation = 3;
@@ -25,7 +29,8 @@ double gTimeConversion = 1; // leave it in terms of samples
 
 int numSamples;
 int test15;
-const int maxSamples = 1000;
+const int maxSamples = 1000*0+220*0+1000;
+const int maxPedSamples = 30;
 float snap[maxSamples]; // Large enough to accomodate any reasonable window we toss at it
 int snapClock;
 float bcm;
@@ -50,7 +55,7 @@ void config(int run)
     //gChain->Add(TString::Format("/home/compton/cornejo/rootfiles/compmon_%d.root",run));
     //gChain->Add(TString::Format("/raid5/cornejo/compton/dvcs/rootfiles/compmon_%d.root",run));
     //gChain->Add(TString::Format("/raid5/cornejo/compton/dvcs/rootfiles/compmon_%d.root",run));
-    gChain->Add(TString::Format("/data/cmuwork/rootfiles/tests_2018/compmon_%d.root",run));
+    gChain->Add(TString::Format("/data/cmuwork/rootfiles/prex/compmon_%d.root",run));
 
     gChain->SetBranchStatus("*",0);
     gChain->SetBranchStatus("numSamples",1);
@@ -59,7 +64,7 @@ void config(int run)
     gChain->SetBranchStatus("mpsCoda",1);
     gChain->SetBranchStatus("snap",1);
     gChain->SetBranchStatus("snapClock",1);
-    gChain->SetBranchStatus("bcm",1);
+    //gChain->SetBranchStatus("bcm",1);
     gChain->SetBranchStatus("laserState",1);
     gChain->SetBranchAddress("numSamples",&numSamples);
     gChain->SetBranchAddress("test15",&test15);
@@ -113,8 +118,8 @@ void averageSnapshot(int run, bool randomOnly = false)
         count4095++;
     }
     mean /= counts;
-    if(mean < 2500&&false) {
-      continue;
+    if(mean < 3791) {
+      //continue;
     }
     if(count0>5&&count4095>5) {
       std::cerr << "Bad snapshot " << entry << "!" << std::endl;
@@ -187,6 +192,7 @@ void averageSnapshot(int run, bool randomOnly = false)
 
 int gStepRandomSnapshotNextEntry = 0;
 TCanvas *canvRandom = 0;
+/*
 void stepRandomSnapshot(int run, int startEntry)
 {
   config(run);
@@ -231,9 +237,63 @@ void stepRandomSnapshot(int run, int startEntry)
   }
   std::cout << "Apparently nothing got plotted" << std::endl;
 }
+*/
+void stepRandomSnapshot(int run, int startEntry = -1)
+{
+  config(run);
+  if(startEntry<0)
+    startEntry = gStepRandomSnapshotNextEntry;
+
+  for(int entry = startEntry; entry < gChain->GetEntries(); entry++) {
+
+    int maxY = 0;
+    int minY = 1e5; 
+    int minX = -100;
+    int sumsum = 0;
+    double avg = 0;
+    double lped = 0;
+    gChain->GetEntry(entry);
+    if(numSamples>maxSamples)
+      numSamples = maxSamples;
+    if(randomTime==1) {
+      gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
+            ,run,entry,mpsCoda,entry,snapClock,test15),
+          numSamples,0,numSamples);
+      gHist->SetStats(false);
+      lped = 0.;
+      for(int s = 0; s < 30; s++) {
+        lped += snap[s];
+      }
+      lped /= 30.;
+      for(int s = 0; s < numSamples && s < maxSamples; s++) {
+        gHist->SetBinContent(s+1,snap[s]);
+        //sumsum += snap[s];
+        sumsum += lped-snap[s];
+        avg += snap[s];
+        //lped+= kGlobalPed;
+        if ( minY > snap[s] ) {
+           minY = snap[s];
+           minX = s;
+        }
+        if ( maxY < snap[s] ) {
+           maxY = snap[s];
+        }
+      }
+      avg /= Double_t(numSamples);
+      //sumsum=lped-sumsum;
+      gHist->Draw();
+      gStepRandomSnapshotNextEntry=entry+1;
+      //std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(835381- sumsum) << std::endl;
+      std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(sumsum)  << ", avg: " << avg << std::endl;
+      return;
+    }
+  }
+ std::cout << "Apparently nothing got plotted" << std::endl;
+}
+
 
 int gStepTriggSnapshotNextEntry = 1;
-void stepTriggSnapshot(int run, int startEntry)
+void stepTrigSnapshot(int run, int startEntry = -1)
 {
   config(run);
   if(startEntry<0)
@@ -241,31 +301,162 @@ void stepTriggSnapshot(int run, int startEntry)
 
   for(int entry = startEntry; entry < gChain->GetEntries(); entry++) {
 
+    int maxY = 0;
     int minY = 1e5; 
     int minX = -100;
+    int sumsum = 0;
+    double avg = 0;
+    double lped = 0;
     gChain->GetEntry(entry);
     if(numSamples>maxSamples)
       numSamples = maxSamples;
-    if(randomTime==0) {
+    if(randomTime==0 && snapClock < 1666000) {
+      std::cerr << "SnapClock = " << snapClock << std::endl;
       gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
             ,run,entry,mpsCoda,entry,snapClock,test15),
           numSamples,0,numSamples);
       gHist->SetStats(false);
+      lped = 0.;
+      for(int s = 0; s < 30; s++) {
+        lped += snap[s];
+      }
+      lped /= 30.;
       for(int s = 0; s < numSamples && s < maxSamples; s++) {
         gHist->SetBinContent(s+1,snap[s]);
+        //sumsum += snap[s];
+        sumsum += lped-snap[s];
+        avg += snap[s];
+        //lped+= kGlobalPed;
         if ( minY > snap[s] ) {
            minY = snap[s];
            minX = s;
         }
+        if ( maxY < snap[s] ) {
+           maxY = snap[s];
+        }
       }
+      avg /= Double_t(numSamples);
+      //sumsum=lped-sumsum;
       gHist->Draw();
       gStepTriggSnapshotNextEntry=entry+1;
-      std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << std::endl;
+      //std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(835381- sumsum) << std::endl;
+      std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(sumsum)  << ", avg: " << avg << std::endl;
       return;
     }
   }
  std::cout << "Apparently nothing got plotted" << std::endl;
 }
+
+void stepTrigSnapshotSum(int run, double sum_gt, double sum_lt, int startEntry = -1, int randomOnly = 0)
+{
+  config(run);
+  if(startEntry<0)
+    startEntry = gStepTriggSnapshotNextEntry;
+
+  for(int entry = startEntry; entry < gChain->GetEntries(); entry++) {
+
+    int maxY = 0;
+    int minY = 1e5; 
+    int minX = -100;
+    int sumsum = 0;
+    double lped=0.0;
+    gChain->GetEntry(entry);
+    //if(gHist)
+    //  delete gHist;
+
+    if(numSamples>maxSamples)
+      numSamples = maxSamples;
+    if(randomTime==randomOnly) {
+      lped = 0;
+      for(int s = 0; s < 30; s++) {
+        lped += snap[s];
+      }
+      lped /= 30.;
+      for(int s = 0; s < numSamples && s < maxSamples; s++) {
+        sumsum += snap[s];
+        //lped += kGlobalPed;
+        if ( minY > snap[s] ) {
+           minY = snap[s];
+           minX = s;
+        }
+        if ( maxY < snap[s] ) {
+           maxY = snap[s];
+        }
+      }
+      sumsum = lped*numSamples - sumsum;
+      if(sumsum >= sum_gt && sumsum <= sum_lt) {
+        gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
+              ,run,entry,mpsCoda,entry,snapClock,test15),
+            numSamples,0,numSamples);
+        gHist->SetStats(false);
+        for(int s = 0; s < numSamples && s < maxSamples; s++) {
+          gHist->SetBinContent(s+1,snap[s]);
+        }
+      	gHist->Draw();
+      	gStepTriggSnapshotNextEntry=entry+1;
+      	std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(sumsum) << ", V=" << kADCToV*(kGlobalPed-minY) << " mV" << ", randomTime=" << randomTime << std::endl;
+      	return;
+       }
+    }
+  }
+ std::cout << "Apparently nothing got plotted" << std::endl;
+}
+
+
+
+void stepTrigCal(int run, int startEntry = -1)
+{
+  config(run);
+  if(startEntry<0)
+    startEntry = gStepTriggSnapshotNextEntry;
+
+  for(int entry = startEntry; entry < gChain->GetEntries(); entry++) {
+
+    int maxY = 0;
+    int minY = 1e5; 
+    int minX = -100;
+    int sumsum = 0;
+    gChain->GetEntry(entry);
+    if(numSamples>maxSamples)
+      numSamples = maxSamples;
+    if(randomTime==0) {
+      gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d);Sample Number;Signal (mV)"
+            ,run,entry,mpsCoda,entry,snapClock,test15),
+          numSamples,0,numSamples);
+      gHist->SetStats(false);
+      float pedSum = 0;
+      int nPedSamps = 0;
+      for(int s = 0; s < numSamples && s < maxPedSamples; s++) {
+        pedSum += snap[s];
+        nPedSamps++;
+      }
+      if(nPedSamps>0) {
+        pedSum /= float(nPedSamps);
+      }
+      float nSamps = 0; 
+      for(int s = 0; s < numSamples && s < maxSamples; s++) {
+        gHist->SetBinContent(s+1,(snap[s]-pedSum)*kADCToV);
+        sumsum += snap[s];
+        nSamps++;
+        if ( minY > snap[s] ) {
+           minY = snap[s];
+           minX = s;
+        }
+        if ( maxY < snap[s] ) {
+           maxY = snap[s];
+        }
+      }
+      gHist->Draw();
+      gStepTriggSnapshotNextEntry=entry+1;
+      Float_t voltage = kADCToV*(minY-pedSum);
+      sumsum = 835381-sumsum;
+      std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", v=" << voltage << "(" << voltage/0.75 << "), sum: " << sumsum << "(" << sumsum/0.75 << ")"  << std::endl;
+      return;
+    }
+  }
+ std::cout << "Apparently nothing got plotted" << std::endl;
+}
+
 
 void displaySnapshot(int run, int entry)
 {
@@ -328,7 +519,7 @@ void pedestalVsCurrent(int run, int laser = 3)
   bool isGood;
   TH2F *hPedVsBCM = new TH2F("hPedVsBCM","Pedestal vs Current;"
       "Current (#muA);Pedestal (rau)",
-      1000,-2.,20.,1000,3810,3870);
+      1000,-2.,20.,1000,3710,3970);
   hPedVsBCM->SetStats(false);
 
   TCanvas *c = new TCanvas("c","c",800,400);
@@ -467,6 +658,65 @@ void pedestalVsTime(int run, int laser = 3)
   c->SaveAs(TString::Format("results/snapshot_ped_vs_time_%d.png",run));
 }
 
+void plotPeakValue(int run, int laser = 1)
+{
+  config(run);
+  TCanvas *c = new TCanvas("c","c",800,800);
+
+  double peakVal;
+  int    peakPos;
+  int minPeakPos = 0+60;
+  int maxPeakPos = 300*0+90;
+  int minPeak = 3100*0;
+  int maxPeak = 3900;
+  TH1F *hPeakValue = new TH1F("hPeakValue","",
+      maxPeak-minPeak,minPeak,maxPeak);
+
+  //TProfile *hPeakValueVsPos = new TProfile("hPeakValueVsPos","",maxPeakPos-minPeakPos,minPeakPos,maxPeakPos);
+  //hPeakValueVsPos->SetMinimum(minPeak);
+  //hPeakValueVsPos->SetMarkerStyle(20);
+  //hPeakValueVsPos->SetMarkerColor(kRed+1);
+
+  for(int entry = 0; entry < gChain->GetEntries(); entry++) {
+    // Get entry from tree
+    gChain->GetEntry(entry);
+
+    // Skip random snapshots
+    if(randomTime)
+      continue;
+
+    // Skip bad snapshots!
+    if(snapClock>6600200*0+830e3)
+      continue;
+
+    // If laser state selected, skip others
+    if(laser>=0&&laserState!=laser)
+      continue;
+
+    peakVal = 1e6;
+    peakPos = -1;
+    for(int s = 0; s < 300; s++) {
+      if(snap[s]<3800 && snap[s]<peakVal) {
+        peakVal = snap[s];
+        peakPos = s;
+      }
+    }
+
+    if(peakPos>=0) {
+	   hPeakValue->Fill(peakVal);
+    }
+    if(peakPos>78)
+      std::cout << "PeakPos: " << peakPos << " for entry " << entry << std::endl;
+  }
+  gPad->SetGrid(true,true);
+  c->cd(1);
+  hPeakValue->Draw();
+  //hPeakValueVsPos->Fit("pol1");
+  //hPeakPos[0]->Fit("gaus","","",50.,100.);
+  //c->SaveAs(TString::Format("results/snapshot_peak_position_vs_time_%d.png",run));
+
+}
+
 void plotPeakValueVsPos(int run, int laser = 1)
 {
   config(run);
@@ -598,27 +848,69 @@ void plotPeakPosVsTime(int run, int laser = 1)
 void plotPeakValueVsSum(int run)
 {
   config(run);
-  TCanvas *c = new TCanvas("c","c",800,800);
+  //TCanvas *c = new TCanvas("c","c",800,800);
+  //TCanvas *c2 = new TCanvas("c2","c2",800,800);
+  TCanvas *c = new TCanvas("c","c",600,600);
+  TCanvas *c2 = new TCanvas("c2","c2",600,600);
+  TCanvas *c3 = new TCanvas("c3","c3",600,600);
+  TCanvas *c4 = new TCanvas("c4","c4",600,600);
+  TCanvas *c5 = new TCanvas("c5","c5",600,600);
 
   double peakVal;
   double sum;
+  double width = 0;
+  double wbefore = 0;
+  double wafter = 0;
+  int peakPos = 0;
   int minSum  = 0;
-  int maxSum  = 15000;
+  int maxSum  = 100000;
+  float minWidth  = 0;
+  float maxWidth  = 40.0*5;
   int minPeak = 0;
   int maxPeak = 4095;
+  TH1F *hWidthFit = (TH1F*)gDirectory->Get("hWidthFit");
+  if(!hWidthFit) {
+    gChain->GetEntry(0); // Find first entry to set limits
+    if(numSamples>maxSamples) {
+      numSamples = maxSamples;
+    }
+    hWidthFit = new TH1F("hWidthFit","",numSamples,0,numSamples*5.);
+  }
   TH2F *hPeakValueVsSum = new TH2F("hPeakValueVsSum","",
-    maxSum-minSum,minSum,maxSum,
+    1000,minSum,maxSum,
     maxPeak-minPeak,minPeak,maxPeak);
 
+  TH2F *hPeakValueVsWidth = new TH2F("hPeakValueVsWidth","",
+    100,minWidth,maxWidth,
+    maxPeak-minPeak,minPeak,maxPeak);
+
+  TH2F *hWidthValueVsSum = new TH2F("hWidthValueVsSum","",
+    1000,minSum,maxSum,
+    maxWidth-minWidth,minWidth,maxWidth);
+
+  TH1F *hWidth = new TH1F("hWidth","hWidth",100.,minWidth,maxWidth);
+  TH1F *hPeak = new TH1F("hPeak","hPeak",100.,minPeak,maxPeak);
+
+  // A quick model for the pulse to see if it gets a better fit
+  //TF1 *f1 = new TF1("f1Pulse1","[0]*TMath::Max(0.,x/([1]**2))*TMath::Exp(-x/[1])");
+
+
   //TProfile *hPeakValueVsSum = new TProfile("hPeakValueVsSum","",maxPeakPos-minPeakPos,minPeakPos,maxPeakPos);
+  //
   //hPeakValueVsSum->SetMinimum(minPeak);
   //hPeakValueVsSum->SetMarkerStyle(20);
   //hPeakValueVsSum->SetMarkerColor(kRed+1);
 
   int foundPeak = false;
+  bool foundWidth = false;
+  bool foundwafter = false;
+  bool foundwbefore = false;
+  float pedsum = 0;
+  TFitResultPtr res;
   for(int entry = 0; entry < gChain->GetEntries(); entry++) {
     // Get entry from tree
     gChain->GetEntry(entry);
+    hWidthFit->Reset();
 
     // Skip random snapshots
     if(randomTime)
@@ -628,28 +920,124 @@ void plotPeakValueVsSum(int run)
     if(snapClock>6600200)
       continue;
 
+    //if(bcm<0.1)
+    //  continue;
+
     peakVal = 1e6;
     sum = 0;
     foundPeak = false;
-    for(int s = 0; s < 300*0+220; s++) {
-      sum += 3846.5-snap[s];
+    foundWidth = false;
+    foundwafter = false;
+    foundwbefore = false;
+    width = wafter = wbefore = -4095;
+    pedsum = 0.0;
+    for(int s = 0; s < 30; s++) {
+        pedsum += snap[s];
+    }
+    pedsum /= 30.0;
+    bool notSat = true;
+    for(int s = 0; s < 300*0+220&&notSat; s++) {
+      //sum += kGlobalPed-snap[s];
+      sum += pedsum-snap[s];
       if(snap[s]<peakVal) {
         peakVal = snap[s];
         foundPeak = true;
+        peakPos =  s;
+      }
+      if(snap[s]<1)
+        notSat = false;
+      hWidthFit->SetBinContent(1+s,pedsum-snap[s]);
+      // Now fit the snapshot
+    }
+    if(foundPeak && peakVal < 3700 && notSat) {
+      res = hWidthFit->Fit("landau","QS","",(peakPos-40.)*5,(peakPos+1)*5);
+      Float_t dx = 0.1;
+      //hWidthFit->GetListOfFunctions()->Print();
+      //Float_t pvh = 0.5*(kGlobalPed-peakVal);
+      Float_t pvh = 0.5*(pedsum-peakVal);
+      for(Float_t tt = peakPos*5; tt > 0. && !foundwbefore; tt-=dx ) {
+        if (res->Parameter(0)*TMath::Landau(tt,res->Parameter(1),res->Parameter(2),false) <= pvh) {
+        foundwbefore = true;
+        wbefore = tt;
+        //std::cout << "wbefore: " << wbefore << ", peakPos: " << peakPos << ", phv: " << pvh << ", fit: " << res->Parameter(0)*TMath::Landau(tt,res->Parameter(1),res->Parameter(2),false) << std::endl;
+        }
+      }
+
+      res = hWidthFit->Fit("landau","QS+","",peakPos*5,(peakPos+60.)*5);
+      for(Float_t tt = peakPos*5; tt<numSamples*5 && !foundwafter; tt+=dx ) {
+        if (res->Parameter(0)*TMath::Landau(tt,res->Parameter(1),res->Parameter(2),false) <= pvh) {
+        foundwafter = true;
+        //width = s-peakPos;
+        wafter = tt;
+        //std::cout << "wafter: " << wafter << ", peakPos: " << peakPos << ", phv: " << pvh << ", fit: " << res->Parameter(0)*TMath::Landau(tt,res->Parameter(1),res->Parameter(2),false) << std::endl;
+        }
+      }
+
+    }
+    /*
+    for(int s = peakPos; s < 220 && !foundwafter && snap[s] < kGlobalPed; s++) {
+      if ((kGlobalPed-snap[s])<(kGlobalPed-peakVal)*.5) {
+        foundwafter = true;
+        //width = s-peakPos;
+        wafter = s;
+        //std::cout << "Width: " << width << ", peakPos: " << peakPos << ", s: " << s << ", peakVal: " << peakVal << ", : " << (kGlobalPed-snap[s]) << ", : " << (kGlobalPed-peakVal)/2. << ", snap[s]: " << snap[s] << std::endl;
       }
     }
+    for(int s = peakPos; s>=0 && !foundwbefore && snap[s] < kGlobalPed; s--) {
+      if ((kGlobalPed-snap[s])<(kGlobalPed-peakVal)*.5) {
+        foundwbefore = true;
+        //width = s-peakPos;
+        wbefore = s;
+        //std::cout << "Width: " << width << ", peakPos: " << peakPos << ", s: " << s << ", peakVal: " << peakVal << ", : " << (kGlobalPed-snap[s]) << ", : " << (kGlobalPed-peakVal)/2. << ", snap[s]: " << snap[s] << std::endl;
+      }
+    }
+    */
+    if(foundwafter&&foundwbefore) {
+      foundWidth = true;
+      width = wafter-wbefore;
+    }
 
-    if(foundPeak) {
+    if(foundPeak&&notSat) {
 	   hPeakValueVsSum->Fill(sum,peakVal);
-        std::cout << "sum: " << sum << " peak: " << peakVal << std::endl;
+     hPeak->Fill(pedsum-peakVal);
+        //std::cout << "sum: " << sum << " peak: " << peakVal << std::endl;
+    }
+    if(foundWidth&&notSat) {
+      hPeakValueVsWidth->Fill(width,peakVal);
+      hWidthValueVsSum->Fill(sum,width);
+      //if(width<75.) {
+        //std::cout << "width: " << width  << ", sum: " << sum << " peak: " << peakVal << std::endl;
+        //return;
+      //}
+      hWidth->Fill(width);
     }
   }
+  c->cd(0);
   gPad->SetGrid(true,true);
-  c->cd(1);
   hPeakValueVsSum->Draw();
-  //hPeakValueVsSum->Fit("pol1");
+  hPeakValueVsSum->Fit("pol1");
+
+  c2->cd(0);
+  gPad->SetGrid(true,true);
+  hPeakValueVsWidth->Draw();
+
+  c3->cd(0);
+  gPad->SetGrid(true,true);
+  hWidthValueVsSum->Draw();
+  gPad->Update();
+
+  c4->cd(0);
+  hWidth->Draw();
+  gPad->Update();
+
+  c5->cd(0);
+  hPeak->Draw();
+  gPad->Update();
+
+
   //hPeakPos[0]->Fit("gaus","","",50.,100.);
   //c->SaveAs(TString::Format("results/snapshot_peak_position_vs_time_%d.png",run));
 
 }
+
 

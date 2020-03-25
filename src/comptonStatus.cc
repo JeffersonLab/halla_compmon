@@ -111,6 +111,10 @@ int comptonStatus::DefineEpicsBranches(TTree* mytree){
   mytree->Branch("epics_s2", &epics_s2, "epics_s2/F");
   mytree->Branch("epics_locking", &epics_locking, "epics_locking/F");
   mytree->Branch("epics_ihwp_in", &epics_ihwp_in, "epics_ihwp_in/I");
+  mytree->Branch("epics_targetPos", &epics_targetPos, "epics_targetPos/F");
+  mytree->Branch("epics_VWienAngle", &epics_VWienAngle, "epics_VWienAngle/F");
+  mytree->Branch("epics_HWienAngle", &epics_HWienAngle, "epics_HWienAngle/F");
+  mytree->Branch("epics_PhiFG", &epics_PhiFG, "epics_PhiFG/F");
   mytree->Branch("epics_wein_right", &epics_wein_right, "epics_wein_right/I");
   mytree->Branch("epics_bpmAx",&epics_aPosX,"epics_bpmAx/F"); //BPM info
   mytree->Branch("epics_bpmAy",&epics_aPosY,"epics_bpmAy/F");
@@ -171,6 +175,32 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   for(Int_t c = 0; c < COMPTON_NIP_SCALERS; c++) {
     mytree->Branch(TString::Format("test%d",c),&(scaler_ip[c].mpsval));
   }
+
+  return 0;
+}
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+int comptonStatus::DefineScalerBranches(TTree* mytree){
+  // Add beam parameters
+  mytree->Branch("bcm",&calbcm.mpsval);
+  mytree->Branch("s1power",&ip_s1power.mpsval,"s1power");
+  mytree->Branch("s2power",&ip_s2power.mpsval,"s2power");
+  mytree->Branch("bpmAx_raw",&ip_bpmAx.mpsval,"bpmAx_raw");
+  mytree->Branch("bpmBy_raw",&ip_bpmBx.mpsval,"bpmBy_raw");
+  mytree->Branch("bpmAx",&bpmAx.mpsval,"bpmAx");
+  mytree->Branch("bpmAy",&bpmAy.mpsval,"bpmAy");
+  mytree->Branch("bpmBx",&bpmBx.mpsval,"bpmBx");
+  mytree->Branch("bpmBy",&bpmBy.mpsval,"bpmBy");
+  mytree->Branch("cavPowerCalibrated",&cavPowerCalibrated.mpsval,"cavPowerCalibrated");
+  mytree->Branch("rawCavPow",&rawCavPower.mpsval,"rawCavPow");
+
+  //Now add the helicity related ones
+  for(Int_t c = 0; c < COMPTON_NIP_SCALERS; c++) {
+    std::cout << "Defining scaler_ip[" << c << "]" << std::endl;
+    mytree->Branch(TString::Format("scaler_ip%d",c),&(scaler_ip[c].mpsval));
+  }
+  for(Int_t c = 0; c < COMPTON_NRUN_SCALERS; c++) {
+    mytree->Branch(TString::Format("scaler_run%d",c),&(scaler_run[c].mpsval) );
+  }
   return 0;
 }
 
@@ -183,11 +213,11 @@ int comptonStatus::DefineStatusBranches(comptonHelTree *mytree){
   mytree->AddVariable(&ip_bpmAx,"bpmAx_raw","BPMAxRaw",true);
   mytree->AddVariable(&ip_bpmAy,"bpmAy_raw","BPMAyRaw",true);
   mytree->AddVariable(&ip_bpmBx,"bpmBx_raw","BPMBxRaw",true);
-  mytree->AddVariable(&ip_bpmBx,"bpmBy_raw","BPMByRaw",true);
+  mytree->AddVariable(&ip_bpmBy,"bpmBy_raw","BPMByRaw",true);
   mytree->AddVariable(&bpmAx,"bpmAx","BPMAx",true);
   mytree->AddVariable(&bpmAy,"bpmAy","BPMAy",true);
   mytree->AddVariable(&bpmBx,"bpmBx","BPMBx",true);
-  mytree->AddVariable(&bpmBx,"bpmBy","BPMBy",true);
+  mytree->AddVariable(&bpmBy,"bpmBy","BPMBy",true);
   mytree->AddVariable(&cavPowerCalibrated,"cavPowerCalibrated","CavPowerCalibrated",true);
   mytree->AddVariable(&rawCavPower,"rawCavPow","RawCavPow",true);
 
@@ -210,6 +240,7 @@ int comptonStatus::DefineStatusBranches(comptonHelTree *mytree){
 
   return 0;
 }
+
 
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -643,6 +674,10 @@ void comptonStatus::SetEpicsDefaults(){
   epics_s1=defValue;
   epics_s2=defValue;
   epics_locking=defValue;
+  epics_targetPos=defValue;
+  epics_HWienAngle=defValue;
+  epics_VWienAngle=defValue;
+  epics_PhiFG=defValue;
   epics_cavpow=defValue;
   //
   defValue=-10.0;   //something silly but will showup  in histogram
@@ -707,6 +742,10 @@ int comptonStatus::UnpackEpics(THaEpics *epics, uint32_t* codadata){
 	valid=getEpicsValue(epics,"IPM1P02A.XPOS",&epics_aPosX);
 	valid=getEpicsValue(epics,"IPM1P02B.YPOS",&epics_bPosY);
 	valid=getEpicsValue(epics,"IPM1P02B.XPOS",&epics_bPosX);
+  valid=getEpicsValue(epics,"pcrex90BDSPOS",&epics_targetPos);
+  valid=getEpicsValue(epics,"VWienAngle",&epics_VWienAngle);
+  valid=getEpicsValue(epics,"HWienAngle",&epics_HWienAngle);
+  valid=getEpicsValue(epics,"Phi_FG",&epics_PhiFG);
 	
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T1",&epics_Thermo1);
 	valid=getEpicsValue(epics,"HaComptonSIM900_P2T2",&epics_Thermo2);

@@ -41,6 +41,7 @@ class comptonStatus {
   comptonStatus();
   comptonStatus(textParams* theParamsIn);
   int DefineStatusBranches(TTree *mytree);  //add-ons to other trees
+  int DefineScalerBranches(TTree* mytree); // scalers for non-helicity trees
   int DefineStatusBranches(comptonHelTree *mytree);  //add-ons to other trees
   int DefineEpicsBranches(TTree *mytree);  //add-ons to other trees
   int DefineTrees();
@@ -297,6 +298,10 @@ class comptonStatus {
     float epics_locking;
     float epics_cavpoldir;
     int epics_ihwp_in;
+    float epics_targetPos;
+    float epics_HWienAngle;
+    float epics_VWienAngle;
+    float epics_PhiFG;
     float epics_aPosX;
     float epics_aPosY;
     float epics_bPosX;

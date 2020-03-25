@@ -148,6 +148,8 @@ int main(int argc, char** argv)
       dataPrefix.Data(), run,dataPostfix.Data());
   TString outFileName = TString::Format("%s/%s%d.root",outPath.Data(),
       outPrefix.Data(),run);
+  TString outHistosFileName = TString::Format("%s/%shistos_%d.root",outPath.Data(),
+      outPrefix.Data(),run);
 
   //+++++++++++++++++++++++++++++++
   //  initialize instances of classes, etc.
@@ -216,8 +218,10 @@ int main(int argc, char** argv)
   }
 
 
+  TFile* rootfilehistos = new TFile(outHistosFileName,"RECREATE","fadc histo data");
   TFile* rootfile = new TFile(outFileName,"RECREATE","fadc data");
   rootfile->SetCompressionLevel(0);
+  rootfile->cd();
   //
   // setup parameters  (edit fadcparams.h to change values)
   // then setup histograms and trees
@@ -230,11 +234,13 @@ int main(int argc, char** argv)
 
   theVMEauxdata->newRun();
 
+  rootfilehistos->cd();
   theTriggered->DefineHistos();   
+  theAccums->DefineHistos();
+  rootfile->cd();
   theTriggered->DefineTriggeredTree();
   theTriggered->newRun();
 
-  theAccums->DefineHistos();
   theAccums->DefineTree();
   theAccums->newRun();
   // initialize for new run
@@ -394,11 +400,12 @@ int main(int argc, char** argv)
   printf(" EPICS events;       %10d\n",epicsCounter);
   printf(" user(flags) events: %10d\n",usereventCounter);
   status=theAccums->DoLaserTransition(1);//wrap up last laser-period if needed
-  // Get the rootfile from one of the trees, just in case ROOT has split the file because
-  // it was too large.
+  // Apparently if it creates a sub file, we get a crash. So this is kind of a cludge to fix that
   rootfile = theAccums->GetTree()->GetCurrentFile();
   rootfile->Write();
-  codaData->codaClose();
   rootfile->Close();
+  rootfilehistos->Write();
+  rootfilehistos->Close();
+  codaData->codaClose();
   return 0;
 }
