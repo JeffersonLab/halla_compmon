@@ -38,7 +38,7 @@ int laserState;
 int randomTime;
 int mpsCoda;
 
-void snapshot()
+void snapshot_ch1()
 {
 }
 
@@ -55,7 +55,7 @@ void config(int run)
     //gChain->Add(TString::Format("/home/compton/cornejo/rootfiles/compmon_%d.root",run));
     //gChain->Add(TString::Format("/raid5/cornejo/compton/dvcs/rootfiles/compmon_%d.root",run));
     //gChain->Add(TString::Format("/raid5/cornejo/compton/dvcs/rootfiles/compmon_%d.root",run));
-    gChain->Add(TString::Format("/data/cmuwork/rootfiles/prex/compmon_%d.root",run));
+    gChain->Add(TString::Format("/data/cmuwork/rootfiles/prex/compmon_ch1_%d.root",run));
 
     gChain->SetBranchStatus("*",0);
     gChain->SetBranchStatus("numSamples",1);
@@ -310,8 +310,7 @@ void stepTrigSnapshot(int run, int startEntry = -1)
     gChain->GetEntry(entry);
     if(numSamples>maxSamples)
       numSamples = maxSamples;
-    if(randomTime==0 && snapClock < 1666000) {
-      std::cerr << "SnapClock = " << snapClock << std::endl;
+    if(randomTime==0) {
       gHist = new TH1F("gHist",TString::Format("Run %d Snapshot %d (mps=%d,entry=%d,clock=%d,#S:%d)"
             ,run,entry,mpsCoda,entry,snapClock,test15),
           numSamples,0,numSamples);

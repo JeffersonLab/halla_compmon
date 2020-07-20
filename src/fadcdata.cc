@@ -46,6 +46,9 @@ int fadcdata::newMPS() {
       AccumNumSamples[chan][i]=0;
       //      PedValue[i]=theParams->GetPedestal(); //run dependent pedestals
     }
+    mpsRandomPedestal[chan] = 0;
+    mpsTriggerPedestal[chan] = 0;
+    mpsPedestal[chan] = 0;
     Sums_NumberFADCTriggers[chan]=-1;
     Sums_NumberTriggersSummed[chan]=-1;
   }
@@ -240,41 +243,46 @@ int fadcdata::UnpackAccumulators(bankstructure bank) {
     AccumValid[chan] = false;
     return 0;
   }
-  chan=data[0];   //first word is channel number
+  int index=0;
   uint64_t tmp64;
-  if(chan>=0 && chan<8) {
-    int index=1;
-    for(int i=0; i<6; i++){
-      AccumNumSamples[chan][i]=data[index];
-      tmp64=data[index+2];
-      tmp64=tmp64<<32;
-      tmp64+=data[index+1];
-      AccumValue[chan][i]=tmp64;;
-      // if(data[index+2]>0){
-      // 	printf("Acc%d: N%8d data[1] 0x%8x data[2] 0x%8x  tmp64 0x%16lx \n",
-      // 	       i,AccumNumSamples[chan][i],data[index+2],data[index+1],tmp64);
-      // }
-      index+=3;
-    }
-    //now unpack settings
-    DacSetting[chan]=data[index++];      //Dac setting
-    //BUG fix 3/9/16.  thesholds were put in elements 1 and 2
-    AccumThresh[chan][0]=data[index++];  //Thresh 1
-    AccumThresh[chan][1]=data[index++];  //Thresh 2
-    unsigned int tmp= data[index++];     //packed N5N6 info
-    N5after[chan]= tmp & 0xff;
-    tmp=tmp>>8;
-    N5before[chan]=tmp & 0xff;
-    tmp=tmp>>8;
-    N4after[chan]=tmp & 0xff;
-    tmp=tmp>>8;
-    N4before[chan]=tmp & 0xff;
+  while(true) {
+    chan=data[index++];   //first word is channel number
+    if(chan>=0 && chan<8) {
+      for(int i=0; i<6; i++){
+        AccumNumSamples[chan][i]=data[index];
+        tmp64=data[index+2];
+        tmp64=tmp64<<32;
+        tmp64+=data[index+1];
+        AccumValue[chan][i]=tmp64;;
+        // if(data[index+2]>0){
+        // 	printf("Acc%d: N%8d data[1] 0x%8x data[2] 0x%8x  tmp64 0x%16lx \n",
+        // 	       i,AccumNumSamples[chan][i],data[index+2],data[index+1],tmp64);
+        // }
+        index+=3;
+      }
+      //now unpack settings
+      DacSetting[chan]=data[index++];      //Dac setting
+      //BUG fix 3/9/16.  thesholds were put in elements 1 and 2
+      AccumThresh[chan][0]=data[index++];  //Thresh 1
+      AccumThresh[chan][1]=data[index++];  //Thresh 2
+      unsigned int tmp= data[index++];     //packed N5N6 info
+      N5after[chan]= tmp & 0xff;
+      tmp=tmp>>8;
+      N5before[chan]=tmp & 0xff;
+      tmp=tmp>>8;
+      N4after[chan]=tmp & 0xff;
+      tmp=tmp>>8;
+      N4before[chan]=tmp & 0xff;
 
-    AccumValid[chan]=true;
-    return 0;
-  }else {
-    return -1;
+      AccumValid[chan]=true;
+      if(crlVersion<6||data[index] == 0xadc00cda) {
+        return 0;
+      }
+    }else {
+      return -1;
+    }
   }
+  return 0;
 }
 
 int fadcdata::UnpackSums(bankstructure bank, int verbose=0, int abortOnError=0) {
@@ -337,9 +345,6 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
         //PedCorrection[chan]=PedValue[chan]*NumSamples-PedestalSubtracted;
         SumsValid[chan]=true;
       }
-      mpsRandomPedestal = 0;
-      mpsTriggerPedestal = 0;
-      mpsPedestal = 0;
       int pointer=8;  //first data word for firsttrigger
       for(int trig=0; trig<NumTriggersSummed; trig++){
         Sums_Clock[trig]=(data[pointer]&0xFFFFFFF);
@@ -351,7 +356,7 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
     	  Sums_PreData[chan][trig]=data[pointer++];
     	  Sums_Data[chan][trig]=data[pointer++];
     	  Sums_PostData[chan][trig]=data[pointer++];
-        mpsTriggerPedestal += Sums_PreData[chan][trig];
+        mpsTriggerPedestal[chan] += Sums_PreData[chan][trig];
         }
       }
       for(int trig=0; trig<NumRandomsSummed; trig++){
@@ -369,25 +374,27 @@ int fadcdata::UnpackSumsV3(bankstructure bank, int verbose=0, int abortOnError=0
           //    Sums_RandomData[chan][trig] +
           //    Sums_RandomPostData[chan][trig]) /
           //      (NumPreSamples+NumSamples+NumPostSamples);
-          mpsRandomPedestal += Sums_RandomPreData[chan][trig];
+          mpsRandomPedestal[chan] += Sums_RandomPreData[chan][trig];
           //}
         }
       }
-      double count = 0;
-      if(NumRandomsSummed>0) {
-        mpsRandomPedestal /= double(NumPreSamples*NumRandomsSummed);//*
-        count++;
-        mpsPedestal += mpsRandomPedestal;
-      }
-      if(NumTriggersSummed>0) {
-        mpsTriggerPedestal /= double(NumPreSamples*NumTriggersSummed);//*
-        count++;
-        mpsPedestal += mpsTriggerPedestal;
-      }
-      if(count>0) {
-        mpsPedestal /= count;
-      } else {
-        mpsPedestal = -1;
+      for(int chan=chanStart; chan<=chanEnd; chan++){
+        double count = 0;
+        if(NumRandomsSummed>0) {
+          mpsRandomPedestal[chan] /= double(NumPreSamples*NumRandomsSummed);//*
+          count++;
+          mpsPedestal[chan] += mpsRandomPedestal[chan];
+        }
+        if(NumTriggersSummed>0) {
+          mpsTriggerPedestal[chan] /= double(NumPreSamples*NumTriggersSummed);//*
+          count++;
+          mpsPedestal[chan] += mpsTriggerPedestal[chan];
+        }
+        if(count>0) {
+          mpsPedestal[chan] /= count;
+        } else {
+          mpsPedestal[chan] = -1;
+        }
       }
 
     }

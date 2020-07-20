@@ -1,14 +1,19 @@
 #!/bin/bash
 
 PARAMS=""
-panguin=1
+panguin=0
 rootfile_keep=0
-web_upload=0
+web_upload=1
 run_num=-1
 max_evt=0
 replay=0
+do_grand=1
 DATE="`date +%F`"
 TIME="`date +%T`"
+
+# echo "AJZ Says: Do not run this script! It is being edited right now."
+# echo "AJZ will inform youm when it is safe to run again"
+# exit 0
 
 print_help () {
   echo "Usage: ./online.sh [-r --run <number>] [-h --help] < --nopanguin --rootfile --webupload ... >"
@@ -16,8 +21,8 @@ print_help () {
   echo "    -r, --run: Specify run number to analyze"
   echo "Optional Arguments:"
   echo "    --maxevent <number>: Specify a maximum event number to analyze up to"
-  echo "    --nopanguin: Disable panguin window"
-  echo "    --webupload: Generate PDFs and place them in the COMPMON_WEB directory"
+  echo "    --panguin: Enable panguin window"
+  echo "    --nowebupload: Don't generate webpage PDFs"
   echo "    --rootfile: Don't delete the plotfile generated at the end of the script"
   echo "    --replay: Force a compmon re-analysis of the run"
   echo "    -h, --help: Print this help message"
@@ -33,20 +38,24 @@ while (( "$#" )); do
       max_evt=$2
       shift 2
       ;;
-    --nopanguin)
-      panguin=0
+    --panguin)
+      panguin=1
       shift 1
       ;;
     --rootfile)
       rootfile_keep=1
       shift 1
       ;;
-    --webupload)
-      web_upload=1
+    --nowebupload)
+      web_upload=0
       shift 1
       ;;
     --replay)
       replay=1
+      shift 1
+      ;;
+    --nogrand)
+      do_grand=0
       shift 1
       ;;
     -h|--help)
@@ -106,15 +115,22 @@ if [ ! -f $COMP_ROOTFILES/compmon_$run_num.root ] || [ $replay -eq 1 ]; then
   ./compmon.sh -r $run_num
 fi
 
+if [ ! -f $COMP_ROOTFILES/compmon_$run_num.root ]; then
+  echo "Couldn't create or find rootfile. Exiting..."
+  exit 1;
+fi
+
+root -l -b -q $COMPMON_LASERCYCLES/laserCycles.C\($run_num\)
+
 if [ $max_evt -gt 0 ]; then
   root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num,$max_evt\)
 else
   root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num\)
 fi
-if [ $web_upload -eq 1 ]; then
-  root -l -b -q $COMPMON_LASERCYCLES/laserPatternWise.C\($run_num\)
-  cp -f $COMPMON_WEB/runs/Run$run_num/laserCycles_$run_num.dat $COMPMON_MINIRUNS/
-fi
+#if [ $web_upload -eq 1 ]; then
+#  root -l -b -q $COMPMON_LASERCYCLES/laserPatternWise.C\($run_num\)
+#  cp -f $COMPMON_WEB/runs/Run$run_num/laserCycles_$run_num.dat $COMPMON_MINIRUNS/
+#fi
 
 if [ $panguin -eq 1 ]; then
   python $COMPMON_PANGUIN/macros/writeCFG.py $run_num
@@ -123,6 +139,7 @@ fi
 
 if [ $web_upload == 1 ]; then
   root -q -b -l $COMPMON_DIR/writeToPDF.C\($run_num\)
+  root -l -b -q $COMPMON_DIR/plotAllCycles.C\($run_num\)
   python $COMPMON_DIR/write_html.py $DATE $TIME index.html
 fi
 
@@ -130,6 +147,12 @@ if [ $rootfile_keep -eq 0 ]; then
   echo "Deleting rootfile..."
   rm -f $COMPMON_PLOTFILES/compton_online_run_$run_num.root
 fi
+
+if [ $do_grand -eq 1 ]; then
+  root -l -q $COMPMON_GRAND/buildRunRootfile.C\($run_num\)
+fi
+
+echo "Online analysis finished for run $run_num"
 
 exit 0;
 

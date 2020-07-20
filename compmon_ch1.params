@@ -343,8 +343,6 @@ TRANSITION=4246
 helicity_structure=8
 helicity_delay=16
 
-
-
 TRANSITION=4264
 calculate_sum_pedestal=1 ; Determine pedestal for each sum individually
 cavity_power_on_min=400
@@ -361,6 +359,17 @@ calculate_sum_pedestal=1 ; Determine pedestal for each sum individually
 
 TRANSITION=4290
 calculate_sum_pedestal=0 ; Determine pedestal for each sum individually
+
+TRANSITION=4293
+cavity_power_on_min=350
+cavity_power_off_max=20
+beam_on_min=98.5
+beam_off_max=0.0
+
+TRANSITION=4307
+cavity_power_on_min=300
+beam_on_min=37
+beam_off_max=1.75
 
 ; Calibration for BPMs
 BPM2Axm_pedestal=3.84085e+02
@@ -389,26 +398,12 @@ BPM2B_sensitivity=18.81
 BPM2A_angle=45.0
 BPM2B_angle=45.0
 
-;BPM2A_xoff=0.353
-;use XSOF values
-
-BPM2A_xoff=0.4
-BPM2A_yoff=-2.8
-BPM2B_xoff=0
-BPM2B_yoff=4.4
-
-TRANSITION=4293
-cavity_power_on_min=350
-cavity_power_off_max=20
-beam_on_min=98.5
-beam_off_max=0.0
-
-TRANSITION=4307
-cavity_power_on_min=300
-beam_on_min=37
-beam_off_max=1.75
-
-
+BPM2A_xoff=0.353
+;BPM2A_yoff=-0.274
+;BPM2A_yoff=0.620083
+BPM2A_yoff=0.125
+BPM2B_xoff=-0.91
+BPM2B_yoff=0.21
 
 
 
@@ -433,52 +428,8 @@ TRANSITION=4348
 ;cavity_power_on_min=1600
 cavity_power_on_min=100
 
-TRANSITION=4481
-beam_on_min=30
-
-TRANSITION=4482
-beam_on_min=67
-
-TRANSITION=4500
-beam_on_min=30
-
-TRANSITION=4501
-beam_on_min=67
-
-TRANSITION=4511
-beam_on_min=30
-
-TRANSITION=4512
-beam_on_min=67
-
-TRANSITION=4566
-beam_on_min=9
-
-TRANSITION=4568
-beam_on_min=67
-
-TRANSITION=4582
-beam_on_min=9
-
-TRANSITION=4583
-beam_on_min=67
-
-TRANSITION=4587
-beam_on_min=18
-
-TRANSITION=4588
-beam_on_min=67
-
 TRANSITION=4590
 beam_on_min=83.5
-
-TRANSITION=4619
-beam_on_min=18
-
-TRANSITION=4620
-beam_on_min=83.5
-
-
 
 TRANSITION=4623
 helicity_structure=4
@@ -502,12 +453,8 @@ TRANSITION=4810
 helicity_delay=8
 
 TRANSITION=4826
-BCM_calibration=0.0003440769
-BCM_pedestal=0.0
-cavity_calibration=0.22553
-cavity_power_pedestal=912.9
-cavity_power_on_min=1600
-cavity_power_off_max=50
+BCM_calibration=0.00033
+BCM_pedestal=-1.1678
 beam_on_min=5
 
 TRANSITION=4930
@@ -515,11 +462,6 @@ ped_value=3789.9
 ;beam_on_min=144
 ;beam_on_min=5
 beam_on_min=120
-BPM2A_xoff=0.39
-BPM2A_yoff=0.125
-BPM2B_xoff=-0.91
-BPM2B_yoff=0.21
-
 
 TRANSITION=4933
 beam_on_min=9
@@ -558,18 +500,18 @@ beam_on_min=9
 TRANSITION=5065
 beam_on_min=120
 
+
 TRANSITION=5177
 ped_value=3789.4
 ;beam_on_min=5
 beam_on_min=120
 
-TRANSITION=5195
-beam_on_min=8
 
-TRANSITION=5196
-beam_on_min=120
+TRANSITION=5198
+cavity_calibration=0.21417
+cavity_power_pedestal=857
 
-TRANSITION=5207
+TRANSITION=5199
 cavity_calibration=0.05
 cavity_power_pedestal=200
 
@@ -577,31 +519,14 @@ TRANSITION=5273
 beam_on_min=130
 cavity_calibration=0.21417
 cavity_power_pedestal=857
-cavity_power_on_min=1600
-cavity_power_off_max=50
+cavity_power_on_min=1900
+cavity_power_off_max=20
 
-TRANSITION=5278
-beam_on_min=8.5
-
-TRANSITION=5279
-beam_on_min=140
-
-TRANSITION=5310
-beam_on_min=8
-
-TRANSITION=5311
-beam_on_min=140
-
-TRANSITION=5315
-beam_on_min=8
-
-TRANSITION=5316
-beam_on_min=140
 
 TRANSITION=5381
 cavity_calibration=0.5139
 cavity_power_pedestal=424.3
-cavity_power_on_min=1600
+cavity_power_on_min=1900
 cavity_power_off_max=100
 beam_on_min=140
 
@@ -612,11 +537,6 @@ TRANSITION=5385
 cavity_calibration=0.646
 cavity_power_pedestal=257.13
 
-TRANSITION=5387
-beam_on_min=8
-
-TRANSITION=5388
-beam_on_min=140
 
 TRANSITION=5389
 cavity_calibration=0.824
@@ -626,11 +546,11 @@ cavity_power_pedestal=120.0
 TRANSITION=5392
 cavity_calibration=0.21417
 cavity_power_pedestal=857
-cavity_power_on_min=1600
-cavity_power_off_max=50
+cavity_power_on_min=1900
+cavity_power_off_max=20
 
 TRANSITION=5398
-beam_on_min=9
+beam_on_min=8
 ped_value=3789.15
 
 TRANSITION=5399
@@ -646,7 +566,7 @@ TRANSITION=5403
 ped_value=3789.15
 
 TRANSITION=5422
-beam_on_min=8
+beam_on_min=9
 
 TRANSITION=5433
 beam_on_min=140.
@@ -655,12 +575,6 @@ TRANSITION=5475
 beam_on_min=8
 
 TRANSITION=5476
-beam_on_min=140
-
-TRANSITION=5486
-beam_on_min=8
-
-TRANSITION=5489
 beam_on_min=140
 
 TRANSITION=5530
@@ -688,7 +602,7 @@ TRANSITION=5627
 beam_on_min=140
 
 TRANSITION=5637
-beam_on_min=8
+beam_on_min=9
 
 TRANSITION=5638
 beam_on_min=140
@@ -700,19 +614,21 @@ TRANSITION=5642
 beam_on_min=140
 
 TRANSITION=5655
-beam_on_min=8
+beam_on_min=9
 
 TRANSITION=5658
 beam_on_min=140
 
 TRANSITION=5718
-beam_on_min=7.5
+beam_on_min=9
 
 TRANSITION=5720
 beam_on_min=140
 
 TRANSITION=5790
-beam_on_min=8
+beam_on_min=9
 
 TRANSITION=5791
-beam_on_min=140
+beam_on_min=140TRANSITION=4963
+channel_calorimeter_PMT=1
+ped_value=3813.18

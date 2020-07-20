@@ -1,3 +1,4 @@
+#include "LED/MiniMegan.h"
 // Last edit: 20190301 Juan Carlos Cornejo
 //   Make it work with ROOT 6 and push hard coded values to the top
 //   Also fix correct sequence (Delta,Both,Nothing,Var,....)
@@ -6,11 +7,12 @@
 // ftp://root.cern.ch/root/doc/ROOTUsersGuideHTML/ch02s06.html
 
 // Set the plot limits here
-const Int_t kVarDACCE = 32661;
+//const Int_t kVarDACCE = 32661; // CRex setting
+const Int_t kVarDACCE = 33355; // PRex setting
 const Float_t kDeltaLow  = -10000*0-2000;
 const Float_t kDeltaHigh =  10000*0+5000*0+20000;
 const Float_t kVarLow    = -10000*0-3000;
-const Float_t kVarHigh   =  50000*0+55000*0 + 90e3;
+const Float_t kVarHigh   =  50000*0+55000*0 + 150e3;
 const Float_t kDiffLow   =   1000*0-8000;
 const Float_t kDiffHigh  =  50000*0+8000*0+24000;
 const Float_t kBothLow   = -10000;
@@ -18,11 +20,24 @@ const Float_t kBothHigh  = 1.30*kVarHigh;
 const Float_t kNothingLow = -4000;
 const Float_t kNothingHigh = 30000;
 
-const Int_t   kDeltaBins =  1000*0+500;
-const Int_t   kVarBins   =  6000;
-const Int_t   kDiffBins  = 60000*0+500;
-const Int_t   kBothBins  = 10000*0+500;
-const Int_t  kNothingBins = 10000*0+500;
+const Float_t kCancelLow = -10e3;
+const Float_t kCancelHigh = 10e3;
+
+
+const Float_t kBinRes = 10; // srau
+
+//const Int_t   kDeltaBins =  1000*0+500;
+//const Int_t   kVarBins   =  6000;
+//const Int_t   kDiffBins  = 60000*0+500;
+//const Int_t   kBothBins  = kVarBins*1.3;
+//const Int_t  kNothingBins = 10000*0+500;
+const Int_t   kDeltaBins =  (kDeltaHigh-kDeltaLow)/kBinRes;
+const Int_t   kVarBins =  (kVarHigh-kVarLow)/kBinRes;
+const Int_t   kDiffBins =  (kDiffHigh-kDiffLow)/kBinRes;
+const Int_t   kBothBins =  (kBothHigh-kBothLow)/kBinRes;
+const Int_t   kNothingBins =  (kNothingHigh-kNothingLow)/kBinRes;
+const Int_t   kCancelBins =  (kCancelHigh-kCancelLow)/kBinRes;
+
 
 TGraphErrors *gr;
 
@@ -32,7 +47,7 @@ TH1F *hVarCE;
 
 //void plotPulser(Int_t Wanted_Dac_Index=13){
 void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
-  
+  MM::init(runnum);
   // TFile *rootfile=new TFile("lnkCompMon.output");
   //TFile *rootfile = gROOT->GetFile();
   //TTree *t1 = (TTree*)rootfile->Get("pulserwise");
@@ -108,6 +123,15 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
   TH1F* h_delta[nsteps];   // Delta minus background
   TH1F* h_var[nsteps];     // Var minus bckground
   TH1F* h_diff[nsteps];    // Both - var
+  TH1F *h_nothing[nsteps];  // The pedestal (LED off)
+  TH1F *h_cancel[nsteps];  // Check that things cancel out
+  std::cout << "Bins::"
+      << "  kDeltaBins: " << kDeltaBins
+      << "  kVarBins: " << kVarBins
+      << "  kDiffBins: " << kDiffBins
+      << "  kBothBins: " << kBothBins
+      << "  kNothingBins: " << kNothingBins
+      << std::endl;
   for(Int_t i=0;i<nsteps;i++){
     sprintf(his_title,"DAC Setting_%03d",i);
     //printf(his_title,"DAC Setting_%03d",i);
@@ -117,6 +141,19 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
     h_var[i]=new TH1F(his_label,his_title,kVarBins,kVarLow,kVarHigh);
     sprintf(his_label,"h_diff_%03d",i);
     h_diff[i]=new TH1F(his_label,his_title,kDiffBins,kDiffLow,kDiffHigh);
+    sprintf(his_label,"h_nothing_%03d",i);
+    h_nothing[i]=new TH1F(his_label,his_title,kNothingBins,kNothingLow,kNothingHigh);
+    sprintf(his_label,"h_cancel_%03d",i);
+    h_cancel[i]=new TH1F(his_label,his_title,kCancelBins,kCancelLow,kCancelHigh);
+
+  // (20190305 Cornejo): New, make these use the same limits as the new limits
+  // defined at the top of this script
+  //float xMax=30000;
+  //float xMin=-4000;
+  //TH1F*h1 = new TH1F("Var + Delta","Var + Delta",10000,xMin,xMax);
+  //TH1F*h2 = new TH1F("Delta","Delta",10000,xMin,xMax);
+  //TH1F*h3 = new TH1F("Var","Var",10000,xMin,xMax);
+  //TH1F*h4 = new TH1F("BG","BG",10000,xMin,xMax);  
   }
 
   // (20190305 Cornejo): New, make these use the same limits as the new limits
@@ -135,7 +172,7 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
   TH1F*h4 = new TH1F("BG","BG",kNothingBins,kNothingLow,kNothingHigh);
   TH1F*h5 = new TH1F("Delta Contribution","Delta Contribution",kDiffBins,kDiffLow,kDiffHigh);
   TH1F*h6 = new TH1F("All DAC Setting Delta Contrib.","All DAC Setting Delta Contrib.",kDiffBins,kDiffLow,kDiffHigh);
-  hVarCE = new TH1F("hVarCE","Variable @ CE", kVarBins,kVarLow,kVarHigh);
+  //hVarCE = new TH1F("hVarCE","Variable @ CE", kVarBins,kVarLow,kVarHigh);
 
 
   Int_t nevents=(Int_t)t1->GetEntries(); // Found form in sample 
@@ -147,14 +184,19 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
     settingDAC[i]=-1;
   }
 
-  float pVar,pDelta,pBoth,pNothing;
+  //float pVar,pDelta,pBoth,pNothing;
+  float &pVar     = p1;
+  float &pDelta   = p2;
+  float &pBoth    = p3;
+  float &pNothing = p4;
 
-  for(Int_t i=20;i<nevents;i++){
+  for(Int_t i=20*0+10e3;i<nevents;i++){
     t1->GetEntry(i);
 
     //if(i==0||i<100){
     //  cout<<"Dac Index is    "<<varIndex<<endl;
     // }
+    /*
     // (cornejo 20190305: these seem to be different than what was in the notes,
     // that is, seems the sync now comes at the end with Variable (which
     // Brian somewhat recalls being the case now for the JLab setup)
@@ -173,6 +215,7 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
     pDelta=p2;
     pBoth=p3;
     pNothing=p4;
+    */
 
     if(varIndex==Wanted_Dac_Index){
       h1->Fill(pBoth);
@@ -188,12 +231,14 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
       h_delta[varIndex]->Fill(pDelta-pNothing);
       h_var[varIndex]->Fill(pVar-pNothing);
       h_diff[varIndex]->Fill(pBoth-pVar);
+      h_nothing[varIndex]->Fill(pNothing);
+      h_cancel[varIndex]->Fill((pBoth-pVar)-(pDelta-pNothing) - MM::crossTalk(pVar-pNothing));
       if(settingDAC[varIndex]==-1) {
         settingDAC[varIndex]=varDAC;
       }
-      if(varDAC==kVarDACCE) {
-        hVarCE->Fill(pVar-pNothing);
-      }
+      //if(varDAC==kVarDACCE) {
+        //hVarCE->Fill(pVar-pNothing);
+      //}
     }  
   }
   c1->cd(1);
@@ -209,6 +254,7 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
   c1->cd(6);
   h6->Draw();
 
+
   int nonzeroSteps=0;
   for(Int_t i=0;i<nsteps;i++){
     entries[i]=h_diff[i]->GetEntries();
@@ -216,15 +262,35 @@ void plotPulser(Int_t runnum,Int_t Wanted_Dac_Index=13){
     nonzeroSteps++;
     c2->cd(i+1);
     h_diff[i]->Draw();
+    // Just get mean from histogram
     meanDiff[i]=h_diff[i]->GetMean();
     meanVar[i]=h_var[i]->GetMean();  
-    rms[i]=h_diff[i]->GetRMS();
+        rms[i]=h_diff[i]->GetRMS();
     sqrtentries[i]=sqrt(entries[i]);
     error[i]=rms[i]/sqrtentries[i];
     errorX[i]=0.;   //just to keep TGraph happy
+
+
+    // Alternative method, fit with a gausian
+    TFitResultPtr fr = h_diff[i]->Fit("gaus","QS","",meanDiff[i]-h_diff[i]->GetRMS()*3.,
+        meanDiff[i]+h_diff[i]->GetRMS()*3.);
+    if(fr) {
+      meanDiff[i] = fr->Parameter(1);
+      error[i] = fr->ParError(1);
+    }
+
     printf(" %4d Var %12.1f  Delta %10.1f  Diff %10.3f p/m %10.2f [DAC=%5d]\n",
  	   i, h_var[i]->GetMean(),h_delta[i]->GetMean(), meanDiff[i],error[i],settingDAC[i]);
   }
+  int draw_count = 0;
+  float draw_every=float(nonzeroSteps)/24.;
+  for(int i = 0; i < 24; i++ ) {
+    int j = i*draw_every;
+    c2->cd(i+1);
+    h_diff[j]->Draw();
+  }
+  c2->cd(25);
+  h_diff[nonzeroSteps-1]->Draw();
 
   TCanvas* c3 = new TCanvas("canvLinearity","Linearity");
 

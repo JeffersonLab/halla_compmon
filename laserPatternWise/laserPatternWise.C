@@ -14,7 +14,8 @@
 #define ACC 0
 #define NUM_MEASUREMENTS 5 // H0, H1, Sum, Diff, Asym
 
-const bool kSaveIntHistos = false+1;
+//const bool kSaveIntHistos = false+1;
+const bool kSaveIntHistos = false;
 const bool kSaveIntHistos2D = false;
 const bool kReadPedestals = false;
 const double kNumSamplesAvg = 6601042;
@@ -889,7 +890,7 @@ void walkTreeAndAnalyze()
     //if(TMath::Abs(double(runScaler2)/40e6-kAvgMPSTime)>kAvgMPSTimeDeviation)
     //  goodPattern = false;
     float bcm = (posBCM + negBCM)/2.0;
-    if((kBeamOn&&bcm < kMinCurrent)||(!kBeamOn&&bcm>kMaxCurrent)) {
+    if(beamState==1) {
       goodPattern = false;
     }
 
@@ -947,7 +948,7 @@ void walkTreeAndAnalyze()
       }
     }
     // Print out the pattern results for this variable
-    printVariablePatternResults(v);
+    //printVariablePatternResults(v);
     // Finally close any open PDF files we have
   }
 

@@ -389,9 +389,9 @@ int fadcAccums::DoAccums(vmeauxdata* theVMEauxdata,fadcdata *theFADCdata){
     double ped=ped_value;  //from textParams class
     // get pedestal from random triggers
     //ped = theFADCdata->GetMPSPedestal();
-    mpsPedestal = theFADCdata->GetMPSPedestal();
-    mpsRandomPedestal = theFADCdata->GetMPSRandomPedestal();
-    mpsTriggerPedestal = theFADCdata->GetMPSTriggerPedestal();
+    mpsPedestal = theFADCdata->GetMPSPedestal(chan);
+    mpsRandomPedestal = theFADCdata->GetMPSRandomPedestal(chan);
+    mpsTriggerPedestal = theFADCdata->GetMPSTriggerPedestal(chan);
     for(int accum=0; accum<8; accum++){
       IntegratedPed =ped*nacc[accum];
       FIXHELaccsig[accum].mpsval=IntegratedPed -accraw[accum];
