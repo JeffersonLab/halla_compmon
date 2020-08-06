@@ -5,8 +5,8 @@
 #   mini version of fadc analysis code for Compton Monitorying
 #  START UPDATE 1/21/2015 gbf
 #
-#  Makefile configured on:   Tue Feb 18 14:28:36 EST 2020
-#  Makefile configured from: config.d/prex.config
+#  Makefile configured on:   Mon Jul 27 14:54:35 EDT 2020
+#  Makefile configured from: config.d/ajz.config
 #
 
 # -------------------------------------------------------------------------
@@ -22,8 +22,7 @@ NAME    = compmon
 # -------------------------------------------------------------------------
 #   These are the standard libraries, include paths and compiler settings
 # -------------------------------------------------------------------------
-#BINDIR		= /home/compton/online/CompMon/bin
-BINDIR		= /home/compton/online/CompMon/src/bin_test
+BINDIR		= /home/compton/ajzec/CompMon/bin
 LIBS		= $(shell $(ROOTSYS)/bin/root-config --libs)
 GLIBS		= $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11
 EVIO		= /home/compton/evio/Linux-x86_64
