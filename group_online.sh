@@ -13,11 +13,6 @@ end=$(( $1 + $add ))
 for ((run = $1; run <= $end; run++)); do
   if [[ ! "${exclude_list[@]}" =~ "${run}" ]];
   then
-    if [ $run -lt 5280 ];
-    then
-      ./online.sh -r $run --replay &
-    else
-      ./online.sh -r $run &
-    fi
+    ./online.sh -r $run &
   fi
 done
