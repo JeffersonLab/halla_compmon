@@ -21,7 +21,7 @@ vector<vector<int>> productionRunList(int prexOrCrex){
   int snailMin = 1; int snailMax = 40;
   vector<vector<int>> runList;
   if(prexOrCrex == 2){
-    snailMin = 101; snailMax = 175;
+    snailMin = 101; snailMax = 220;
   }
   else if(prexOrCrex != 1 && prexOrCrex != 2){
     printf("Please enter correct parameter for experiment:\n");
@@ -35,13 +35,15 @@ vector<vector<int>> productionRunList(int prexOrCrex){
     string runNumStr;
     vector<int> snailList;
     ifstream infile(Form("%s/snail%i.list", getenv("COMPMON_SNAILS"), snail));
-    while(getline(infile, runNumStr)){
-      Int_t runNum = atoi(runNumStr.c_str());
-      if(runNum == 0) continue;
-      snailList.push_back(runNum);
+    if(infile.good()){
+      while(getline(infile, runNumStr)){
+        Int_t runNum = atoi(runNumStr.c_str());
+        if(runNum == 0) continue;
+        snailList.push_back(runNum);
+      }
+      runList.push_back(snailList);
+      snailList.clear();
     }
-    runList.push_back(snailList);
-    snailList.clear();
   }
   return runList;
 }

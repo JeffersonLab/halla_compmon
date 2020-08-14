@@ -716,3 +716,12 @@ beam_on_min=8
 
 TRANSITION=5791
 beam_on_min=140
+
+
+TRANSITION=5877
+ped_value=3789.8
+cavity_power_on_min=1400
+beam_on_min=10
+
+TRANSITION=5878
+beam_on_min=110

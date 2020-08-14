@@ -124,6 +124,32 @@ def create_plot_list(run_mode, runs_to_write):
     list_elements += 4*spaces + '</li>\n'
   return list_elements + 3*spaces + '</ul>\n'
 
+def create_unsorted_plot_list(run_mode, max_sorted_run):
+  analyzed_runlist = os.listdir(os.environ['COMPMON_WEB'] + '/runs/')
+  unsorted_runlist = []
+  for run_folder in analyzed_runlist:
+    run_num = int(run_folder.replace('Run', ''))
+    if run_num > max_sorted_run:
+      unsorted_runlist += [run_num]
+  unsorted_runlist.sort(reverse=True)
+
+  list_files = [('ess_stats.pdf', 'Essential Stats'),
+                ('snapshots.pdf', 'Snapshot Plots'), 
+                ('sums.pdf', 'Triggered Sums'), 
+                ('acc0.pdf', 'Acc0/NAcc0'), 
+                ('quartet.pdf', 'Multiplet Variables'),
+                ('asymmetries.pdf', 'Multiplet Asymmetries'),
+                ('backgrounds.pdf', 'Background Detectors'),
+                ('cycle_qVars.pdf', 'Laser Cycles')]
+  block_str = 3*spaces + '<h4>Unsorted Runs</h4>\n' + 3*spaces + '<ul>\n'
+  for run in unsorted_runlist:
+    block_str += 4*spaces + '<li><a href=\'runs/Run' + str(run) + '/\'>Run ' + str(run) + '</a>: &ensp;\n'
+    for data in list_files:
+      block_str += 5*spaces + '<a href=\'runs/Run' + str(run) + '/' + data[0] + '\'>' + data[1] + '</a>&ensp;\n'
+    block_str += 4*spaces + '</li>\n'
+  block_str += 3*spaces + '</ul>\n'
+  return block_str
+
 def create_prex_plot_list(run_mode, runs_to_write):
   list_files = [('ess_stats.pdf', 'Essential Stats'),
                 ('snapshots.pdf', 'Snapshot Plots'), 
@@ -157,6 +183,7 @@ def create_prex_plot_list(run_mode, runs_to_write):
     snail_strs[title] = 3*spaces + '<h4>' + title + '</h4>\n' + 3*spaces + '<ul>\n'
   print('Found data in ' + str(len(snail_strs)) + ' snails')
   
+  max_sorted_run = 0
   for run in runs_to_write:
     for snail in snails_and_runs:
       if not snail[-1]:
@@ -173,6 +200,7 @@ def create_prex_plot_list(run_mode, runs_to_write):
         snail_strs[snail[0]] += 4*spaces + '</li>\n'
         snail[-1] = True
       if run in snail:
+        if run > max_sorted_run: max_sorted_run = run
         snail_strs[snail[0]] += 4*spaces + '<li><a href=\'runs/Run' + str(run) + '/\'>Run ' + str(run) + '</a>: &ensp;\n'
         for data in list_files:
           snail_strs[snail[0]] += 5*spaces + '<a href=\'runs/Run' + str(run) + '/' + data[0] + '\'>' + data[1] + '</a>&ensp;\n'
@@ -185,7 +213,7 @@ def create_prex_plot_list(run_mode, runs_to_write):
   data_str = ''
   for snail in snails_and_runs:
     data_str += snail_strs[snail[0]] + 3*spaces + '</ul>\n'
-  return data_str
+  return data_str, max_sorted_run
 
 def create_end_block(run_mode, date, time):
   block_str = 2*spaces + '<hr>\n'
@@ -224,12 +252,13 @@ def write_html():
   dvcs_runs.reverse(); test_runs.reverse(); prex_runs.reverse()
   #dvcs_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>DVCS Runs</h3>\n' + create_plot_list(dvcs_runs) + 2*spaces + '</div>\n'
   #test_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>Test Runs</h3>\n' + create_plot_list(test_runs) + 2*spaces + '</div>\n'
-  data_section = create_prex_plot_list(run_mode, prex_runs)
+  data_section, max_sorted_run = create_prex_plot_list(run_mode, prex_runs)
+  unsorted_block = create_unsorted_plot_list(run_mode, max_sorted_run)
   if data_section == '' or data_section == '\n':
     data_section = 3*spaces + 'No runs to report yet!\n'
   prex_block = 2*spaces + '<div>\n' + 3*spaces + '<h3>' + expt_name(run_mode) + ' Runs</h3>\n' \
                 + 3*spaces + '<a href=\'http://prex.jlab.org/analysis/' + url_str(run_mode) + '/compton/runs/\'>All Runs</a>&ensp;\n' \
-                + data_section + 2*spaces + '</div>\n'
+                + unsorted_block + data_section + 2*spaces + '</div>\n'
   #list_block = prex_block + test_block + dvcs_block
   list_block = prex_block
   f.close();
