@@ -725,3 +725,10 @@ beam_on_min=10
 
 TRANSITION=5878
 beam_on_min=110
+
+
+TRANSITION=5927
+beam_on_min=8
+
+TRANSITION=5928
+beam_on_min=110

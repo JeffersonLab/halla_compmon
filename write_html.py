@@ -128,6 +128,7 @@ def create_unsorted_plot_list(run_mode, max_sorted_run):
   analyzed_runlist = os.listdir(os.environ['COMPMON_WEB'] + '/runs/')
   unsorted_runlist = []
   for run_folder in analyzed_runlist:
+    if 'Run' not in run_folder: continue
     run_num = int(run_folder.replace('Run', ''))
     if run_num > max_sorted_run:
       unsorted_runlist += [run_num]
