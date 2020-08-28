@@ -403,16 +403,12 @@ cavity_power_off_max=20
 beam_on_min=98.5
 beam_off_max=0.0
 
-TRANSITION=4307
+TRANSITION=4306
 cavity_power_on_min=300
 beam_on_min=37
 beam_off_max=1.75
 
-
-
-
-
-TRANSITION=4308
+TRANSITION=4307
 beam_on_min=98
 
 TRANSITION=4309
@@ -731,4 +727,10 @@ TRANSITION=5927
 beam_on_min=8
 
 TRANSITION=5928
+beam_on_min=110
+
+TRANSITION=6040
+beam_on_min=8
+
+TRANSITION=6041
 beam_on_min=110

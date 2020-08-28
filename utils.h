@@ -88,7 +88,10 @@ bool isCloseTo(Float_t x, Float_t y){return TMath::Abs(x - y)/x < 0.001;}
 bool hasLowError(Float_t mean, Float_t err){return TMath::Abs(err/mean) < 1e-4;}
 
 TString get_wien_state(TFile *infile, Int_t run_num){
-  if(run_num < 4700){return "UNK";}
+  if(run_num < 4700 || 
+    !(TH1F *)infile->Get("epics_VWienAngle") ||
+    !(TH1F *)infile->Get("epics_HWienAngle") ||
+    !(TH1F *)infile->Get("epics_PhiFG")){return "UNK";}
   Float_t vWienAngle = ((TH1F *)infile->Get("epics_VWienAngle"))->GetMean();
   Float_t hWienAngle = ((TH1F *)infile->Get("epics_HWienAngle"))->GetMean();
   Float_t phiFG = ((TH1F *)infile->Get("epics_PhiFG"))->GetMean();

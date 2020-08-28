@@ -263,9 +263,11 @@ void epicsPlots(TChain *epicswise, int run_num, TFile *outfile){
   epicswise->Project(tableX.Data(), tableX.Data(), ""); epicswise->Project(tableY.Data(), tableY.Data(), "");
   epicswise->Project(targetPos.Data(), targetPos.Data(), "");
   write_histo(Ax_name, outfile); write_histo(Ay_name, outfile); write_histo(Bx_name, outfile); write_histo(By_name, outfile);
-  write_histo(vWien, outfile); write_histo(hWien, outfile); write_histo(solWien, outfile);
+  if((TH1F *)gDirectory->Get(vWien.Data())) write_histo(vWien, outfile); 
+  if((TH1F *)gDirectory->Get(hWien.Data())) write_histo(hWien, outfile); 
+  if((TH1F *)gDirectory->Get(solWien.Data())) write_histo(solWien, outfile);
   write_histo(tableX, outfile); write_histo(tableY, outfile);
-  write_histo(targetPos, outfile);
+  if((TH1F *)gDirectory->Get(targetPos.Data())) write_histo(targetPos, outfile);
 }
 
 void epicsPlotsLast(TChain *epicswise, int run_num, TFile *outfile){

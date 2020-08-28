@@ -169,8 +169,8 @@ def create_prex_plot_list(run_mode, runs_to_write):
   snail_strs = {}
   for snail in snail_list:
     snail_num = int(snail.replace("snail", "").replace(".list", ""))
-    if (snail_num > 40 and snail_num != 500) and run_mode == 'prex': continue
-    elif (snail_num <= 40 or snail_num == 500) and run_mode == 'crex': continue
+    if (snail_num > 99 and snail_num != 500) and run_mode == 'prex': continue
+    elif (snail_num <= 99 or snail_num == 500) and run_mode == 'crex': continue
     title = "Snail " + str(snail_num)
     if snail_num == 150 or snail_num == 151 or snail_num == 159 or snail_num == 160: 
       title += ' (Snail taken with cavity DOCP < 100%! Polarizations are systematically affected!!!)'
