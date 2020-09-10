@@ -139,8 +139,8 @@ std::vector<TString> calc_polarization(TFile *infile, int run_num, int accum, in
   Double_t vSummMeanE = TMath::Sqrt(TMath::Power(vSummOnE, 2) + TMath::Power(vSummOffE, 2));
   Double_t vAsymOnE   = vAsymOn*TMath::Sqrt(TMath::Power(vDiffOnE/vDiffOn, 2)   + TMath::Power(vSummMeanE/(vSummOn - vSummOff), 2));
   Double_t vAsymOffE  = vAsymOff*TMath::Sqrt(TMath::Power(vDiffOffE/vDiffOff, 2) + TMath::Power(vSummMeanE/(vSummOn - vSummOff), 2));
-  //Double_t vAsymSub   = vAsymOn - vAsymOff;
-  //Double_t vAsymSubE  = TMath::Sqrt(TMath::Power(vAsymOnE, 2) + TMath::Power(vAsymOffE, 2));
+  Double_t vAsymSub   = vAsymOn - vAsymOff;
+  Double_t vAsymSubE  = TMath::Sqrt(TMath::Power(vAsymOnE, 2) + TMath::Power(vAsymOffE, 2));
   Double_t pol = vAsymOn/get_analyzing_power(run_num); Double_t polE = vAsymOnE/get_analyzing_power(run_num);
 
   vector<TString> results; results.push_back("--------Histogram Vars--------\n");
@@ -150,11 +150,12 @@ std::vector<TString> calc_polarization(TFile *infile, int run_num, int accum, in
   results.push_back(Form("On Diff: %f +/- %f\n", vDiffOn, vDiffOnE));   results.push_back(Form("Off Diff: %f +/- %f\n", vDiffOff, vDiffOffE));
   results.push_back(Form("On Sum: %f +/- %f\n",  vSummOn,  vSummOnE));  results.push_back(Form("Off Sum: %f +/- %f\n",  vSummOff,  vSummOffE));
   results.push_back("--------Asymmetries--------\n");
-  results.push_back(Form("On Asym: %f +/- %f\n", vAsymOn, vAsymOnE)); results.push_back(Form("Off Asym: %f +/- %f\n", vAsymOff, vAsymOffE));
+  results.push_back(Form("On Asym: %f +/- %f (ppt)\n", vAsymOn, vAsymOnE)); results.push_back(Form("Off Asym: %f +/- %f (ppt)\n", vAsymOff, vAsymOffE));
   results.push_back("--------Bkgd Subtraction--------\n");
   results.push_back(Form("BkSub Sum: %f +/- %f\n", vSummOn - vSummOff, vSummMeanE));
-  results.push_back("--------Polarization--------\n");
-  results.push_back(Form("Polarization: %f +/- %f (%f%%)", 0.1*pol, 0.1*polE, 100*polE/TMath::Abs(pol)));
+  results.push_back(Form("BkSub Asym: %f +/- %f (ppt)\n", vAsymSub, vAsymSubE));
+  //results.push_back("--------Polarization--------\n");
+  //results.push_back(Form("Polarization: %f +/- %f (%f%%)", 0.1*pol, 0.1*polE, 100*polE/TMath::Abs(pol)));
   
   return results;
 }
@@ -402,6 +403,7 @@ void asym_pad(TFile *infile, int run_num, TString output_path, TPad *myPad, int 
   myPad->Divide(2, 2); gStyle->SetOptStat(0);
 
   TString msmts[3] = {Form("posH%i", accum), Form("negH%i", accum), Form("asym%isub", accum)};
+  TString axes[3] = {Form("posH%i (sRAU)", accum), Form("negH%i (sRAU)", accum), Form("asym%isub (ppt)", accum)};
   for(int i = 0;  i < 3; i++){
     myPad->cd(i + 1);
     TString onName = ""; TString offName = "";
@@ -416,6 +418,7 @@ void asym_pad(TFile *infile, int run_num, TString output_path, TPad *myPad, int 
     TH1F *hON  = (TH1F *)infile->Get(onName.Data());
     TH1F *hOFF = (TH1F *)infile->Get(offName.Data());
     hON->SetLineColor(kGreen - 3); hOFF->SetLineColor(kRed);
+    hON->GetXaxis()->SetTitle(axes[i].Data()); hOFF->GetXaxis()->SetTitle(axes[i].Data());
     hON->GetYaxis()->SetRangeUser(0, 1.2*hON->GetMaximum()); hOFF->GetYaxis()->SetRangeUser(0, 1.2*hOFF->GetMaximum());
     THStack *hs = new THStack(Form("quartet_beam1_%s_stack", msmts[i].Data()), Form("Run %i %s, %s: Beam ON", run_num, tree_name.Data(), msmts[i].Data()));
     hs->Add(hON); hs->Add(hOFF); hs->Draw("nostack");
@@ -427,6 +430,7 @@ void asym_pad(TFile *infile, int run_num, TString output_path, TPad *myPad, int 
     for(int i = 0; i < sON.size();  i++){ptON->AddText(sON[i].Data())->SetTextColor(kGreen + 1);}
     for(int i = 0; i < sOFF.size(); i++){ptOFF->AddText(sOFF[i].Data())->SetTextColor(kRed);}
     ptON->Draw(); ptOFF->Draw();
+    //hs->GetXaxis()->SetTitle(axes[i].Data()); myPad->Modified();
   }
   myPad->cd(4);
   vector<TString> results = calc_polarization(infile, run_num, accum);

@@ -49,8 +49,8 @@ void writeToPDF(int run_num){
   TPad *c_asym0 = new TPad("c_asym0", "Asyms", 0, 0, 1, 1);
   TPad *c_pol0 = new TPad("c_pol0", "Polarization 0", 0, 0, 1, 1);
   TPad *c_pol0_graphs = new TPad("c_pol0_graphs", "Polarization Graphs 0", 0, 0, 1, 1);
-  TPad *c_pol4 = new TPad("c_pol4", "Polarization 4", 0, 0, 1, 1);
-  TPad *c_pol4_graphs = new TPad("c_pol4_graphs", "Polarization Graphs 4", 0, 0, 1, 1);
+  //TPad *c_pol4 = new TPad("c_pol4", "Polarization 4", 0, 0, 1, 1);
+  //TPad *c_pol4_graphs = new TPad("c_pol4_graphs", "Polarization Graphs 4", 0, 0, 1, 1);
   TPad *c_back_asyms = new TPad("c_back_asyms", "Background Detector Asyms", 0, 0, 1, 1);
   TPad *c_back_rates = new TPad("c_back_rates", "Background Detector Rates", 0, 0, 1, 1);
 
@@ -67,9 +67,9 @@ void writeToPDF(int run_num){
   quartet_pad(infile, run_num, output_path, c_summ0, "summ0", true); //summ0.png
   quartet_pad(infile, run_num, output_path, c_asym0, "asym0", true); //asym0.png
   asym_pad(infile, run_num, output_path, c_pol0, 0, true); //asym_acc0_hists.png
-  asym_pad(infile, run_num, output_path, c_pol4, 4, true); //asym_acc4_hists.png
+  //asym_pad(infile, run_num, output_path, c_pol4, 4, true); //asym_acc4_hists.png
   asym_graph_pad(infile, run_num, output_path, c_pol0_graphs, 0, true); //q_acc0_graphs.png
-  asym_graph_pad(infile, run_num, output_path, c_pol4_graphs, 4, true); //q_acc4_graphs.png
+  //asym_graph_pad(infile, run_num, output_path, c_pol4_graphs, 4, true); //q_acc4_graphs.png
   detector_asyms(infile, run_num, output_path, c_back_asyms, true); //back_asyms.png
   detector_rates(infile, run_num, output_path, c_back_rates, true); //back_rates.png
 
