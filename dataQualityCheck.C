@@ -8,8 +8,11 @@
 #include <TChain.h>
 #include <TColor.h>
 #include <TString.h>
+
 #include <vector>
 #include <fstream>
+
+#include "utils.h"
 
 using namespace std;
 
@@ -733,37 +736,41 @@ void quartet_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString 
 
 
 void dataQualityCheck(int run_num, int max_evt=1e9){
-  TString rootfiles_path(getenv("COMP_ROOTFILES"));
   TString compmon_out_path(getenv("COMPMON_PLOTFILES"));
-  TString fname = Form("%s/compmon_%i.root", rootfiles_path.Data(), run_num);
+  //TString fname = Form("%s/compmon_%i.root", rootfiles_path.Data(), run_num);
   TString outname = Form("%s/compton_online_run_%i.root", compmon_out_path.Data(), run_num);
-  TChain *snapshots = new TChain("snapshots");
-  TChain *triggerwise = new TChain("triggerwise");
-  TChain *mpswise = new TChain("mpswise");
-  TChain *quartetwise = new TChain("quartetwise");
-  TChain *epicswise = new TChain("epicswise");
-  TChain *runwise = new TChain("runwise");
-  snapshots->Add(fname.Data());
-  triggerwise->Add(fname.Data());
-  mpswise->Add(fname.Data());
-  quartetwise->Add(fname.Data());
-  epicswise->Add(fname.Data());
-  runwise->Add(fname.Data());
+  //TChain *snapshots = new TChain("snapshots");
+  //TChain *triggerwise = new TChain("triggerwise");
+  //TChain *mpswise = new TChain("mpswise");
+  //TChain *quartetwise = new TChain("quartetwise");
+  //TChain *epicswise = new TChain("epicswise");
+  //TChain *runwise = new TChain("runwise");
+  //snapshots->Add(fname.Data());
+  //triggerwise->Add(fname.Data());
+  //mpswise->Add(fname.Data());
+  //quartetwise->Add(fname.Data());
+  //epicswise->Add(fname.Data());
+  //runwise->Add(fname.Data());
+  Int_t mpswise = 0; Int_t quartetwise = 1;
+  Int_t pulserwise = 2; Int_t triggerwise = 3;
+  Int_t epicswise = 4; Int_t runwise = 5;
+  Int_t snapshots = 6;
+  vector<TChain *> runChains = loadChain(run_num);
   TFile *fout = new TFile(outname.Data(), "RECREATE");
-  epicsPlots(epicswise, run_num, fout);
-  epicsPlotsLast(epicswise, run_num, fout);
-  runwisePlots(runwise, run_num, fout);
-  snapshotPlots(snapshots, run_num, fout, max_evt);
-  trig_sum_plots(triggerwise, run_num, fout, "sum", "triggerwise", "sums", max_evt);
-  breakdown_plots(mpswise, run_num, fout, "Acc0/NAcc0", "mpswise", "acc0", max_evt);
-  breakdown_plots(mpswise, run_num, fout, "numTriggers", "mpswise", "trigs", max_evt);
-  mps_graphs(mpswise, run_num, fout, "mpswise", max_evt);
-  quartet_plots(quartetwise, run_num, fout, max_evt);
-  quartet_graphs(quartetwise, run_num, fout, "quartetwise", max_evt);
+  epicsPlots(runChains[epicswise], run_num, fout);
+  epicsPlotsLast(runChains[epicswise], run_num, fout);
+  runwisePlots(runChains[runwise], run_num, fout);
+  snapshotPlots(runChains[snapshots], run_num, fout, max_evt);
+  trig_sum_plots(runChains[triggerwise], run_num, fout, "sum", "triggerwise", "sums", max_evt);
+  breakdown_plots(runChains[mpswise], run_num, fout, "Acc0/NAcc0", "mpswise", "acc0", max_evt);
+  breakdown_plots(runChains[mpswise], run_num, fout, "numTriggers", "mpswise", "trigs", max_evt);
+  mps_graphs(runChains[mpswise], run_num, fout, "mpswise", max_evt);
+  quartet_plots(runChains[quartetwise], run_num, fout, max_evt);
+  quartet_graphs(runChains[quartetwise], run_num, fout, "quartetwise", max_evt);
 
   TString hname("mpswise_ihwp"); TString htitle = Form("Run %i mpswise, IHWP State, all evts", run_num);
   TH1F *h_ihwp = new TH1F(hname.Data(), htitle.Data(), 2, 0, 2);
-  mpswise->Project(hname.Data(), "epics_ihwp_in", "mpsCoda > 300");
+  runChains[mpswise]->Project(hname.Data(), "epics_ihwp_in", "mpsCoda > 300");
   fout->cd(); h_ihwp->Write(); delete h_ihwp;
   
   fout->Close();

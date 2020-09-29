@@ -12,6 +12,8 @@
 #include <fstream>
 #include <vector>
 
+#include "utils.h"
+
 using namespace std;
 
 vector<vector<int>> completeCycleList(int runNum){
@@ -30,21 +32,14 @@ vector<vector<int>> completeCycleList(int runNum){
   return runCycles;
 }
 
-vector<TString> hist_stats(TH1F* h){
-  vector<TString> stats;
-  
-  stats.push_back(Form("Entries: %i", (Int_t)h->GetEntries()));
-  stats.push_back(Form("Mean: %.4f +/- %.4f", h->GetMean(), h->GetMeanError()));
-  stats.push_back(Form("Std Dev: %.4f +/- %.4f", h->GetRMS(), h->GetRMSError()));
-
-  return stats;
-}
-
 void plotAllCycles(int runNum){
   vector<vector<int>> allCycles = completeCycleList(runNum);
-  TFile *f = new TFile(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum), "READ");
-  TTree *mpswise = (TTree *)f->Get("mpswise");
-  TTree *quartetwise = (TTree *)f->Get("quartetwise");
+  //TFile *f = new TFile(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum), "READ");
+  //TTree *mpswise = (TTree *)f->Get("mpswise");
+  //TTree *quartetwise = (TTree *)f->Get("quartetwise");
+  vector<TChain *> runChains = loadChain(runNum);
+  Int_t mpsInd = 0 ; Int_t quartetInd = 1;
+  TChain *mpswise = runChains[mpsInd]; TChain *quartetwise = runChains[quartetInd];
 
   gStyle->SetOptStat(0);
   Float_t sumOnMean = 0; Float_t sumOffMean = 0;

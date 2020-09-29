@@ -83,7 +83,7 @@ void config(int run)
   gLoadedRun = run;
 }
 
-void averageSnapshot(int run, bool randomOnly = false)
+void averageSnapshot(int run, bool randomOnly = true)
 {
   config(run);
   int entries = gChain->GetEntries();

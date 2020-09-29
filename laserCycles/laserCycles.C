@@ -11,10 +11,11 @@
 
 //#include "runs.h"
 #include "laserUtils.h"
+#include "../utils.h"
 
 using namespace std;
 
-vector<LaserPeriod> findLaserPeriods(TTree *quartetwise, Int_t runNum){
+vector<LaserPeriod> findLaserPeriods(TChain *quartetwise, Int_t runNum){
   int laserState, firstMPSnumber, beamState;
   vector<LaserPeriod> periods;
 
@@ -132,7 +133,7 @@ vector<LaserPeriod> trimLaserPeriods(vector<LaserPeriod> periods){
   return trimPeriods2;
 }
 
-vector<LaserCycle> findLaserCycles(vector<LaserPeriod> trimPeriods, TTree *quartetwise, vector<vector<int>> eventCuts, Int_t runNum){
+vector<LaserCycle> findLaserCycles(vector<LaserPeriod> trimPeriods, TChain *quartetwise, vector<vector<int>> eventCuts, Int_t runNum){
   vector<LaserCycle> cycles;
   ofstream errFile; errFile.open(Form("%s/errorCodes/Run%i_errCodes.txt", getenv("COMPMON_LASERCYCLES"), runNum));
   int cycleNum = 0;
@@ -184,11 +185,13 @@ vector<LaserCycle> findLaserCycles(vector<LaserPeriod> trimPeriods, TTree *quart
 }
 
 vector<LaserCycle> runCycles(int runNum){
-  TFile *fin = TFile::Open(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum));
-  TTree *quartetwise = (TTree *)fin->Get("quartetwise");
+  vector<TChain *> runChains = loadChain(runNum);
+  Int_t quartetwise = 1;
+  //TFile *fin = TFile::Open(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum));
+  //TTree *quartetwise = (TTree *)fin->Get("quartetwise");
   //TTree *mpswise = (TTree *)fin->Get("mpswise");
   vector<vector<int>> eventCuts = readEventCuts(runNum);
-  return findLaserCycles(trimLaserPeriods(findLaserPeriods(quartetwise, runNum)), quartetwise, eventCuts, runNum);
+  return findLaserCycles(trimLaserPeriods(findLaserPeriods(runChains[quartetwise], runNum)), runChains[quartetwise], eventCuts, runNum);
 }
 
 void printCycles(vector<LaserCycle> cycles, int runNum){

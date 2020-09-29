@@ -105,7 +105,9 @@ def main_body(run_mode):
   main_str += '  <p>\n'
   main_str += '    <h2>' + expt_name(run_mode) + ' Compton Online Plots</h2>\n'
   main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandSnailwise.pdf\'>Snailwise Aggregation</a>&ensp;'
-  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandRunwise.pdf\'>Runwise Aggregation</a>\n'
+  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandRunwise.pdf\'>Runwise Aggregation</a>&ensp;'
+  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandCyclewise.pdf\'>Cyclewise Aggregation</a>&ensp;'
+  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandCompton.root\'>Grand Rootfile Download Link</a>\n'
   main_str += '  </p>\n'
   return main_str
 
@@ -172,7 +174,8 @@ def create_prex_plot_list(run_mode, runs_to_write):
     if (snail_num > 99 and snail_num != 500) and run_mode == 'prex': continue
     elif (snail_num <= 99 or snail_num == 500) and run_mode == 'crex': continue
     title = "Snail " + str(snail_num)
-    if snail_num == 150 or snail_num == 151 or snail_num == 159 or snail_num == 160: 
+    if snail_num == 150 or snail_num == 151 or snail_num == 159 or snail_num == 160 or \
+       snail_num == 220 or snail_num == 221: 
       title += ' (Snail taken with cavity DOCP < 100%! Polarizations are systematically affected!!!)'
     snail_data = [title]
     snail_file = open(os.environ['COMPMON_SNAILS'] + '/' + snail)

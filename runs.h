@@ -21,7 +21,7 @@ vector<vector<int>> productionRunList(int prexOrCrex){
   int snailMin = 1; int snailMax = 50;
   vector<vector<int>> runList;
   if(prexOrCrex == 2){
-    snailMin = 101; snailMax = 220;
+    snailMin = 101; snailMax = 299;
   }
   else if(prexOrCrex != 1 && prexOrCrex != 2){
     printf("Please enter correct parameter for experiment:\n");

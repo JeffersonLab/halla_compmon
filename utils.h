@@ -16,6 +16,54 @@
 
 using namespace std;
 
+void resetChain(TChain *ch){
+  if(ch){
+    delete ch;
+  }
+}
+
+vector<TChain *> loadChain(Int_t runnum){
+  TChain *mpswise = 0; TChain *quartetwise = 0;
+  TChain *pulserwise = 0; TChain *triggerwise = 0;
+  TChain *epicswise = 0; TChain *runwise = 0;
+  TChain *snapshots = 0;
+
+  resetChain(mpswise); resetChain(quartetwise);
+  resetChain(pulserwise); resetChain(triggerwise);
+  resetChain(epicswise); resetChain(runwise);
+  resetChain(snapshots);
+
+  mpswise = new TChain("mpswise");
+  quartetwise = new TChain("quartetwise");
+  pulserwise = new TChain("pulserwise");
+  triggerwise = new TChain("triggerwise");
+  epicswise = new TChain("epicswise");
+  runwise = new TChain("runwise");
+  snapshots = new TChain("snapshots");
+  std::vector<TChain*> chains;
+  chains.push_back(mpswise);
+  chains.push_back(quartetwise);
+  chains.push_back(pulserwise);
+  chains.push_back(triggerwise);
+  chains.push_back(epicswise);
+  chains.push_back(runwise);
+  chains.push_back(snapshots);
+
+  TString filesPre = Form("%s/compmon_%d",getenv("COMP_ROOTFILES"),runnum);
+  int nfiles = 0;
+  for(size_t ch = 0; ch < chains.size(); ch++) {
+    nfiles = chains[ch]->Add(filesPre+".root");
+    nfiles += chains[ch]->Add(filesPre+"_*.root");
+
+    if(nfiles<=0) {
+	    std::cerr << "Looked for files under: " << filesPre+".root" << std::endl;
+	    std::cerr << "Found no files to plot!" << std::endl;
+	    return chains;
+    }
+  }
+  return chains;
+}
+
 Double_t get_analyzing_power(int run_num){
   if(run_num < 3800){return 0.1105;}
   else if(run_num >= 4232 && run_num <= 4929){return 0.01655915;}
