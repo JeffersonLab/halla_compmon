@@ -14,24 +14,51 @@
 
 using namespace std;
 
-void makeRunPedestalPlots(Int_t runNum){
-  printf("Plotting pedestals for run %i...\n", runNum);
-  TFile *f = TFile::Open(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum));
-  TTree *snapshots = (TTree *)f->Get("snapshots");
+TChain *T;
+TChain *snapshots;
+
+void makeRunPedestalPlots(){
+
+    T = new  TChain("ComptonG4");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4345.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4346.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4353.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4361.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4364.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4436.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4592.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4601.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4615.root");
+    T->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4511.root");
+    
+    snapshots = new TChain("snapshots");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4345.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4346.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4353.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4361.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4364.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4436.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4592.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4601.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4615.root");
+    snapshots->Add("/compton/data/cmuwork/rootfiles/prex/compmon_4511.root");
+
+
+    // TTree *snapshots = (TTree *)chain->Get("snapshots");
 
   //  float snapshot[];
   int randomTime, mpsCoda, numSamples, snapClock, beamState, laserState;
   int randoms = 0;
- TH1F *hON = new TH1F(Form("hON_run%i", runNum), Form("Run %i ", runNum), 200,3782, 3797);
+  TH1F *hON = new TH1F("hON", "hON", 400,3700, 3900);
   hON->SetLineColor(kGreen + 2); hON->SetStats(1); 
   hON->GetXaxis()->SetTitle("ped [RAU]");
-  TH1F *hOFF = new TH1F(Form("hOFF_run%i", runNum), Form("Run %i ", runNum), 200, 3782, 3797);
+  TH1F *hOFF = new TH1F("hOFF", "hOFF", 400, 3700, 3900);
   hOFF->SetLineColor(kRed); hOFF->SetStats(1);
   hOFF->GetXaxis()->SetTitle("ped [RAU]");  
-TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0, 80);
+  TH1F *hON1 = new TH1F("hON1", "hON1", 400,0, 200);
   hON1->SetLineColor(kGreen + 2); hON1->SetStats(1); 
   hON1->GetXaxis()->SetTitle("max_deviation [RAU]");
-  TH1F *hOFF1 = new TH1F(Form("hOF1F_run%i", runNum), Form("Run %i ", runNum), 200, 0, 80);
+  TH1F *hOFF1 = new TH1F("hOFF1", "hOFF1", 400, 0,200);
   hOFF1->SetLineColor(kRed); hOFF1->SetStats(1);
   hOFF1->GetXaxis()->SetTitle("max_deviation [RAU]");
 
@@ -80,15 +107,6 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
   double max = *max_element(avgs.begin(), avgs.end());
   //  cout << max << endl;
    
-  
-  // for (int i = 0; i < avgs.size(); i++) {
-  // std::cout  << avgs[i] << " ";
-  //}
-  //std::cout << std::endl;
-  //}
-  // all_avg will be average of full snapshot
-  // avgs will be vector of rolling averages (size of 289)
-
 
   double max_dev =0;
    max_dev = max - all_avg;
@@ -101,19 +119,10 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
  hOFF1->Fill(max_dev);
  }
  
- if(max_dev<1) { // Include the sum of this snapshot in the global sum
+ if(max_dev<30) { // Include the sum of this snapshot in the global sum
     sum = all_avg;
   
- // cout << sum << endl;
-    //  float_t sum = 0;
-    //  //   float_t sum1 =0;
-    //  for(Int_t j = 0; j< 300; j++){
-    // sum += snap[j];
-    // }
-    // if(max_dev<5){
-    //   sum/=300;
-    //   sum1 += sum;
-    // }
+
  if((laserState == 0 || laserState == 1) && randomTime == 1 && beamState ==1){
  hON->Fill(sum);
  }
@@ -127,7 +136,7 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
   gStyle->SetStatFormat("6.6g");
 
 
-  TCanvas *c = new TCanvas(Form("cRun%i", runNum), Form("Run %i Pedestals", runNum), 700, 700);
+  TCanvas *c = new TCanvas("c", "c", 700, 700);
   //   c->Divide(1,2);
   c->SetLogy();
   c->cd();
@@ -135,7 +144,7 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
   // c->cd(2);
   // hOFF->Draw();
 
-   TCanvas *c1 = new TCanvas(Form("c1Run%i", runNum), Form("Run %i Pedestals", runNum), 700, 700);
+   TCanvas *c1 = new TCanvas("c1", "c1", 700, 700);
 // c->Divide(1,2);
     c1->SetLogy();
   c1->cd();
@@ -143,7 +152,7 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
   // c->cd(2);
   hOFF->Draw();
 
- TCanvas *c2 = new TCanvas(Form("c2Run%i", runNum), Form("Run %i Pedestals", runNum), 700, 700);
+ TCanvas *c2 = new TCanvas("c2", "c2", 700, 700);
   //   c->Divide(1,2);
  //  c2->SetLogy();
   c2->cd();
@@ -151,7 +160,7 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
   // c->cd(2);
   // hOFF->Draw();
 
-   TCanvas *c3 = new TCanvas(Form("c3Run%i", runNum), Form("Run %i Pedestals", runNum), 700, 700);
+   TCanvas *c3 = new TCanvas("c3", "c3", 700, 700);
 // c->Divide(1,2);
    // c3->SetLogy();
   c3->cd();
@@ -175,15 +184,15 @@ TH1F *hON1 = new TH1F(Form("hON1_run%i", runNum), Form("Run %i ", runNum), 200,0
  
 }
 
-void snapshotPedestal_test(){
-  Int_t runNum1 = 4364; //Specifically chosen for stability
+void snapshotPedestal_test1(){
+  //  Int_t runNum1 = 4364; //Specifically chosen for stability
   //  Int_t runNum2 = 4614;
   // Int_t runNum3 = 4554;
   //Int_t runNum4 = 4430;
   //Int_t runNum5 = 4345;
 
   
-  makeRunPedestalPlots(runNum1);
+   makeRunPedestalPlots();
   // makeRunPedestalPlots(runNum2);
   // makeRunPedestalPlots(runNum3);
   //makeRunPedestalPlots(runNum4);

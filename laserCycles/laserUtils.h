@@ -42,9 +42,11 @@ typedef struct{
     periodNum = -1; beamOnEntry = 0; beamOffEntry = 0; beamUnkEntry = 0; runNum = -1;
   }
 
-  void incBeam(int beamState){
-    if(beamState == 0) beamOffEntry++;
-    else if(beamState == 1) beamOnEntry++;
+  void incBeam(Int_t beamState, Int_t dithering){
+    //if(beamState == 0) beamOffEntry++;
+    //else if(beamState == 1) beamOnEntry++;
+    if(beamState == 0 || dithering == 1) beamOffEntry++;
+    else if(beamState == 1 && dithering == 0) beamOnEntry++;
     else beamUnkEntry++;
   }
 

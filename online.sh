@@ -149,6 +149,7 @@ if [ $rootfile_keep -eq 0 ]; then
 fi
 
 if [ $do_grand -eq 1 ]; then
+  python3 $COMPMON_DIR/write_position_file.py $run_num
   root -l -q $COMPMON_GRAND/buildRunRootfile.C\($run_num\)
 fi
 

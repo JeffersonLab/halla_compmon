@@ -16,12 +16,13 @@
 using namespace std;
 
 vector<LaserPeriod> findLaserPeriods(TChain *quartetwise, Int_t runNum){
-  int laserState, firstMPSnumber, beamState;
+  int laserState, firstMPSnumber, beamState, dithering;
   vector<LaserPeriod> periods;
 
   quartetwise->SetBranchAddress("laserState", &laserState);
   quartetwise->SetBranchAddress("firstMPSnumber", &firstMPSnumber);
   quartetwise->SetBranchAddress("beamState", &beamState);
+  quartetwise->SetBranchAddress("dithering", &dithering);
 
   int currentLaserState = -1; int stateNum = 0;
   LaserPeriod myLaserPeriod; myLaserPeriod.reset();
@@ -51,7 +52,7 @@ vector<LaserPeriod> findLaserPeriods(TChain *quartetwise, Int_t runNum){
       myLaserPeriod.periodNum = stateNum;
       periods.push_back(myLaserPeriod);
     }
-    myLaserPeriod.incBeam(beamState);
+    myLaserPeriod.incBeam(beamState, dithering);
   }
   printf("  Found %i distinct laser periods\n", ((int)periods.size()));
   return periods;
