@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage() { echo "Usage: $0 [-n <snail number>] [-h, print help info] [--nogrand Optional: skip the grand rootfile build]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 [-s <snail number>] [-h, print help info] [--nogrand Optional: skip the grand rootfile build] [--exptPlots make the snail/run/cyclewise plots for the entire experimental run]" 1>&2; exit 1; }
 
 #while getopts ":h:s:" opt; do
 #  case ${opt} in
@@ -14,6 +14,7 @@ usage() { echo "Usage: $0 [-n <snail number>] [-h, print help info] [--nogrand O
 #done
 
 do_grand=1
+do_expt_plots=0
 
 while (( "$#" )); do
   case "$1" in
@@ -23,6 +24,10 @@ while (( "$#" )); do
       ;;
     --nogrand)
       do_grand=0
+      shift 1
+      ;;
+    --exptPlots)
+      do_expt_plots=1
       shift 1
       ;;
     -h|--help)
@@ -65,13 +70,16 @@ fi
 #root -l -b -q aggregate.C\(\"snail${snail_num}\",4,1\)
 
 if [ $do_grand -eq 1 ]; then
-  root -l -b -q $COMPMON_GRAND/buildGrandRootfile.C\($run_code\)
+  root -l -b -q $COMPMON_GRAND/grandConstruction/buildGrandRootfile.C\($run_code\)
 fi
-root -l -b -q aggregateGrand.C\(${snail_num}\)
-root -l -b -q $COMPMON_GRAND/grandMacros/snailwisePlots.C\($run_code\)
-root -l -b -q $COMPMON_GRAND/grandMacros/runwisePlots.C\($run_code\)
-root -l -b -q $COMPMON_GRAND/grandMacros/cyclewisePlots.C\($run_code\)
+root -l -b -q $COMPMON_GRAND/grandOnline/aggregateGrand.C\(${snail_num}\)
+if [ $do_expt_plots -eq 1 ]; then
+  $COMPMON_GRAND/exptPlots.sh $run_code
+fi
+#root -l -b -q $COMPMON_GRAND/grandMacros/snailwisePlots.C\($run_code\)
+#root -l -b -q $COMPMON_GRAND/grandMacros/runwisePlots.C\($run_code\)
+#root -l -b -q $COMPMON_GRAND/grandMacros/cyclewisePlots.C\($run_code\)
 
 date=`date +"%Y-%m-%d"`
 time=`date +"%T"`
-python $COMPMON_DIR/write_html.py $date $time index.html
+python $COMPMON_ONLINE/write_html.py $date $time index.html

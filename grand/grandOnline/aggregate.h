@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-#include "../grand/vars.h"
+#include "../grandConstruction/vars.h"
 
 Int_t snailNum, runNum, cycleNum;
 Int_t fOffMPS1, fOffMPS2, onMPS1, onMPS2, lOffMPS1, lOffMPS2;

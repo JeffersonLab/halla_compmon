@@ -16,7 +16,7 @@
 #include <fstream>
 #include <istream>
 
-#include "../vars.h"
+#include "../grandConstruction/vars.h"
 
 TString experimentCode(Int_t prexOrCrex){
   TString expt("prex");
@@ -138,7 +138,7 @@ void drawAndPrintGraphs(TString msmt, Int_t msmtNum, TCanvas *can, vector<TGraph
   //leg->AddEntry(g2, "Moller IHWP IN");
   //leg->Draw("same");
 
-  can->Print(Form("%s/plots/msmt%04i_%s.pdf", getenv("COMPMON_GRAND"), msmtNum, msmt.Data()), "pdf");
+  can->Print(Form("%s/grandOnline/plots/msmt%04i_%s.pdf", getenv("COMPMON_GRAND"), msmtNum, msmt.Data()), "pdf");
   //exit(0);
 }
 

@@ -11,7 +11,7 @@
 
 //#include "runs.h"
 #include "laserUtils.h"
-#include "../utils.h"
+#include "../online/utils.h"
 
 using namespace std;
 
@@ -206,12 +206,12 @@ void printCycles(vector<LaserCycle> cycles, int runNum){
 }
 
 void writeCycles(vector<LaserCycle> cycles, int runNum){
-  ofstream output; output.open(Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), runNum));
+  ofstream output; output.open(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   for(LaserCycle cycle : cycles){
     output<<cycle.mpsStart<<","<<cycle.firstOffEndMPS()<<","<<cycle.onStartMPS()<<","<<cycle.onEndMPS()<<","<<cycle.lastOffStartMPS()<<","<<cycle.mpsEnd<<"\n";
   }
   output.close();
-  printf("Created cycles file %s/cycles_%i.dat\n", getenv("COMPMON_MINIRUNS"), runNum);
+  printf("Created cycles file %s/cycles_%i.dat\n", getenv("COMPMON_CYCLES"), runNum);
 }
 
 

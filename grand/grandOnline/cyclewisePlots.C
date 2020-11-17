@@ -8,7 +8,7 @@
 #include "THStack.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
-#include "../buildGrandRootfile.h"
+#include "../grandConstruction/buildGrandRootfile.h"
 #include "makePlots.h"
 
 #include <vector>
@@ -56,7 +56,7 @@ void cyclewisePlots(Int_t prexOrCrex){
   //  plotStandardRun(fname.Data(), othVars[i].Data(), msmtNum++, 0.9, 1.1, othFloat[i]);
   //}
 
-  gSystem->Exec(Form("pdfunite %s/plots/msmt*.pdf %s/aggregates/%sGrandCyclewise.pdf", 
+  gSystem->Exec(Form("pdfunite %s/grandOnline/plots/msmt*.pdf %s/aggregates/%sGrandCyclewise.pdf", 
                 getenv("COMPMON_GRAND"), getenv("COMPMON_WEB"), expt.Data()));
-  gSystem->Exec(Form("rm -f %s/plots/msmt*.pdf", getenv("COMPMON_GRAND")));
+  gSystem->Exec(Form("rm -f %s/grandOnline/plots/msmt*.pdf", getenv("COMPMON_GRAND")));
 }

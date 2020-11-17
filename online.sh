@@ -1,7 +1,6 @@
 #!/bin/bash
 
 PARAMS=""
-panguin=0
 rootfile_keep=0
 web_upload=1
 run_num=-1
@@ -37,10 +36,6 @@ while (( "$#" )); do
     --maxevent)
       max_evt=$2
       shift 2
-      ;;
-    --panguin)
-      panguin=1
-      shift 1
       ;;
     --rootfile)
       rootfile_keep=1
@@ -80,31 +75,17 @@ done
 # set positional arguments in their proper place
 eval set -- "$PARAMS"
 
-if [ $run_num -lt 0 ]; then
+if [ $run_num -lt 2239 ]; then
   echo
   echo "Please specify run number!"
-  echo
-  print_help
-  exit 1;
-elif [[ $run_num -ge 2239 && $run_num -le 2857 ]]; then
-  tests=2
-elif [[ $run_num -ge 3114 && $run_num -le 4231 ]]; then
-  tests=1
-elif [ $run_num -ge 4232 ]; then
-  tests=0
-else
-  echo 
-  echo "Please enter real run number."
   echo
   print_help
   exit 1;
 fi
 
 #echo $DATE $TIME
-#echo "Panguin setting: $panguin"
 #echo "Upload setting: $web_upload"
 #echo "Rootfile setting: $rootfile_keep"
-#echo "Tests setting: $tests"
 #echo $PARAMS
 
 if [ $web_upload -eq 1 ] && [ ! -d $COMPMON_WEB/runs/Run$run_num ]; then
@@ -123,24 +104,15 @@ fi
 root -l -b -q $COMPMON_LASERCYCLES/laserCycles.C\($run_num\)
 
 if [ $max_evt -gt 0 ]; then
-  root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num,$max_evt\)
+  root -q -b -l $COMPMON_ONLINE/dataQualityCheck.C\($run_num,$max_evt\)
 else
-  root -q -b -l $COMPMON_DIR/dataQualityCheck.C\($run_num\)
-fi
-#if [ $web_upload -eq 1 ]; then
-#  root -l -b -q $COMPMON_LASERCYCLES/laserPatternWise.C\($run_num\)
-#  cp -f $COMPMON_WEB/runs/Run$run_num/laserCycles_$run_num.dat $COMPMON_MINIRUNS/
-#fi
-
-if [ $panguin -eq 1 ]; then
-  python $COMPMON_PANGUIN/macros/writeCFG.py $run_num
-  $COMPMON_PANGUIN/build/panguin -f $COMPMON_PANGUIN/macros/prex_auto_runs.cfg -r $run_num
+  root -q -b -l $COMPMON_ONLINE/dataQualityCheck.C\($run_num\)
 fi
 
 if [ $web_upload == 1 ]; then
-  root -q -b -l $COMPMON_DIR/writeToPDF.C\($run_num\)
-  root -l -b -q $COMPMON_DIR/plotAllCycles.C\($run_num\)
-  python $COMPMON_DIR/write_html.py $DATE $TIME index.html
+  root -q -b -l $COMPMON_ONLINE/writeToPDF.C\($run_num\)
+  root -l -b -q $COMPMON_ONLINE/plotAllCycles.C\($run_num\)
+  python $COMPMON_ONLINE/write_html.py $DATE $TIME index.html
 fi
 
 if [ $rootfile_keep -eq 0 ]; then
@@ -149,8 +121,8 @@ if [ $rootfile_keep -eq 0 ]; then
 fi
 
 if [ $do_grand -eq 1 ]; then
-  python3 $COMPMON_DIR/write_position_file.py $run_num
-  root -l -q $COMPMON_GRAND/buildRunRootfile.C\($run_num\)
+  python3 $COMPMON_ONLINE/write_position_file.py $run_num
+  $COMPMON_GRAND/runPlots.sh $run_num
 fi
 
 echo "Online analysis finished for run $run_num"

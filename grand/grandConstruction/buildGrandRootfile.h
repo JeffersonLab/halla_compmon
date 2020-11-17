@@ -245,6 +245,7 @@ void setAnalyzingPower(Int_t sNum, Int_t run_num){
   }
 }
 
+/**
 vector<vector<TString>> readVarsFile(TString outTree, TString inTree){
   ifstream infile(Form("%s/grandConfigs/%s_%s_vars.csv", getenv("COMPMON_GRAND"), outTree.Data(), inTree.Data()));
   string readStr;
@@ -270,9 +271,10 @@ vector<TString> readPolsFile(TString outTree, TString inTree){
   }
   return vars;
 }
+**/
 
 vector<vector<int>> findCycles(int runNum){
-  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), runNum));
+  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   string readStr;
   int cyclesInThisRun = 0;
   vector<vector<int>> run;
@@ -289,7 +291,7 @@ vector<vector<int>> findCycles(int runNum){
       cycle.push_back(limits[i]);
     run.push_back(cycle);
   }
-  printf("Looked in %s/cycles_%i.dat\n", getenv("COMPMON_MINIRUNS"), runNum);
+  printf("Looked in %s/cycles_%i.dat\n", getenv("COMPMON_CYCLES"), runNum);
   printf("Found %i cycles\n", (Int_t)run.size());
   return run;
 }

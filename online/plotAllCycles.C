@@ -17,7 +17,7 @@
 using namespace std;
 
 vector<vector<int>> completeCycleList(int runNum){
-  ifstream cycle_infile(Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), runNum));
+  ifstream cycle_infile(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   string read_str;
   vector<vector<int>> runCycles;
   while(getline(cycle_infile, read_str)){
