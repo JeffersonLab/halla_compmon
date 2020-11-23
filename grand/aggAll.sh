@@ -5,7 +5,7 @@ end=0
 if [ "$1" -eq 1 ]; then
   start=1
   end=44
-elif [ "$1" -eq 2]; then
+elif [ "$1" -eq 2 ]; then
   start=101
   end=223
 else
@@ -15,7 +15,7 @@ else
   exit 1;
 fi
 
-for i in { $start..$end }
+for ((i=$start; i<=$end; i++))
 do
   ./aggregate.sh -s $i --nogrand
 done

@@ -22,13 +22,13 @@ void cyclewisePlots(Int_t prexOrCrex){
   TString expt = experimentCode(prexOrCrex);
   TString fname = Form("%sGrandCompton.root", expt.Data());
   const Int_t nPolVars = 6;
-  const Int_t nAsymVars = 11;
+  const Int_t nAsymVars = 15;
   const Int_t nDataVars = 24;
   const Int_t nOthVars = 8;
   TString polVars[nPolVars] = {"Pol0", "Asym0", "Asym0NGC", "Asym0LasOn", "Asym0LasOff", "SigSubSum0"};
   TString asymVars[nAsymVars] = {"AsymCentralRateLasOn", "AsymCentralRateLasOff", "AsymHFingerRateLasOn", "AsymHFingerRateLasOff",
                                  "AsymVFingerRateLasOn", "AsymVFingerRateLasOff", "AsymUSbg1", "AsymUSbg2",
-                                 "AsymDSbg1", "AsymDSbg2", "AsymBCM"};
+                                 "AsymDSbg1", "AsymDSbg2", "AsymBCM", "diff_bpmAx", "diff_bpmAy", "diff_bpmBx", "diff_bpmBy"};
   TString dataVars[nDataVars] = {"Acc0LasOn", "Acc0LasOff1", "Acc0LasOff2", "Acc0BeamOff", 
                                  "Acc4LasOn", "Acc4LasOff1", "Acc4LasOff2", "Acc4BeamOff",
                                  "LaserPower", "BeamCurrent", "bpmAx", "bpmAy", "bpmBx", "bpmBy", 

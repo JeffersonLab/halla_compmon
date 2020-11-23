@@ -81,6 +81,8 @@ int vmeauxdata::Unpack(bankstructure bank){
   if(bitflip_cavpol!=0) cavpolBit=1-cavpolBit;
   cavpowBit = (mytirdata & 0x40)>>6;
   mpsSignal = (mytirdata & 0x80)>>7;
+  // If CRL VERSION >=7 then mytirdata[5] is now LoadLED
+  loadLEDBit = (mytirdata>>16)&(0x1);
 
   int point = numAuxWords+3;
   int point2 = point+data[point-1]+2;

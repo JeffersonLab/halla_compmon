@@ -27,6 +27,7 @@ class vmeauxdata {
     int cavpolBit;
     int evlen;
     int mpsSignal;
+    int loadLEDBit;
 
     // HAPPEX Timing Board data
     int rampDelay;
@@ -74,6 +75,7 @@ class vmeauxdata {
     int GetDithering()  {return dithering;};
     int GetCavityPowerBit()	{return cavpowBit;};
     int GetCavityPolBit()	{return cavpolBit;};
+    int GetLoadLEDBit()		{ return loadLEDBit; };
 
     //Timing Board Info
     int GetRampDelay()  	{return rampDelay;};

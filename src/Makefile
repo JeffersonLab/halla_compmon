@@ -22,7 +22,8 @@ NAME    = compmon
 # -------------------------------------------------------------------------
 #   These are the standard libraries, include paths and compiler settings
 # -------------------------------------------------------------------------
-BINDIR		= /home/compton/ajzec/CompMon/bin
+#BINDIR		= /home/compton/ajzec/CompMon/bin
+BINDIR		= ../bin
 LIBS		= $(shell $(ROOTSYS)/bin/root-config --libs)
 GLIBS		= $(ROOTGLIBS) -L/usr/X11R6/lib -lXpm -lX11
 EVIO		= /home/compton/evio/Linux-x86_64

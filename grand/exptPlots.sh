@@ -3,6 +3,7 @@
 root -l -b -q $COMPMON_GRAND/grandOnline/snailwisePlots.C\($1\)
 root -l -b -q $COMPMON_GRAND/grandOnline/runwisePlots.C\($1\)
 root -l -b -q $COMPMON_GRAND/grandOnline/cyclewisePlots.C\($1\)
+root -l -b -q $COMPMON_GRAND/grandOnline/writeSnailwiseFile.C\($1\)
 
 date=`date +"%Y-%m-%d"`
 time=`date +"%T"`

@@ -13,7 +13,7 @@
 #include <fstream>
 #include <istream>
 
-#include "../vars.h"
+#include "../grandConstruction/vars.h"
 
 using namespace std;
 
@@ -30,6 +30,7 @@ TString signString(Int_t sign){
 }
 
 void writeSnailwiseFile(Int_t prexOrCrex){
+  printf("Writing summary textfile...\n");
   TString exptStr("");
   TString exptName("");
   if(prexOrCrex == 1){
@@ -63,7 +64,7 @@ void writeSnailwiseFile(Int_t prexOrCrex){
   snl->SetBranchAddress("PhiFG", &solWien);
   snl->SetBranchAddress("snailNum", &snlNum);
 
-  ofstream outfile(Form("%sCompton.csv", exptStr.Data()));
+  ofstream outfile(Form("%s/aggregates/%sCompton.csv", getenv("COMPMON_WEB"), exptStr.Data()));
   outfile<<Form("//Pol0 (pct), Pol0 Err (pct), Chi2, NDF, ihwp state, vert Wien Angle, horiz Wien Angle, solenoid Wien Angle, calculated sign, qw1 setting, hw1 setting\n");
   for(Int_t i = 0; i < snl->GetEntries(); i++){
     snl->GetEntry(i);
@@ -71,4 +72,5 @@ void writeSnailwiseFile(Int_t prexOrCrex){
                   snlNum, 100*pol0.mean, 100*pol0.meanErr, pol0.Chi2, pol0.NDF, ihwpStateName(ihwp).Data(), vWien, hWien, solWien, sign, (Int_t)qw1, (Int_t)hw1);
   }
   outfile.close();
+  printf("...Done!\n");
 }

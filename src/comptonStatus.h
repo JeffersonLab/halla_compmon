@@ -230,6 +230,7 @@ class comptonStatus {
     int n5before;
     int n5after;
     int dithering;
+    int loadLED;
     int dac;
     int rampdelay;
     int inttime;

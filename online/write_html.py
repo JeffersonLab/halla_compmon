@@ -107,7 +107,8 @@ def main_body(run_mode):
   main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandSnailwise.pdf\'>Snailwise Aggregation</a>&ensp;'
   main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandRunwise.pdf\'>Runwise Aggregation</a>&ensp;'
   main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandCyclewise.pdf\'>Cyclewise Aggregation</a>&ensp;'
-  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandCompton.root\'>Grand Rootfile Download Link</a>\n'
+  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'GrandCompton.root\'>Grand Rootfile Download Link</a>&ensp;'
+  main_str += '    <a href=\'aggregates/' + prefix_str(run_mode) + 'Compton.csv\'>Run Summary CSV File</a>\n'
   main_str += '  </p>\n'
   return main_str
 

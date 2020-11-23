@@ -161,6 +161,7 @@ int comptonStatus::DefineStatusBranches(TTree* mytree){
   mytree->Branch("buflen", &buflen, "buflen/I");
   mytree->Branch("l1a", &l1a, "l1a/i");
   mytree->Branch("dithering", &dithering, "dithering/I");
+  mytree->Branch("loadLED",&loadLED,"loadLED/I");
 
   mytree->Branch("beameng", &epbeameng, "beameng/F");
   mytree->Branch("transmit", &eptransmit, "transmit/F");
@@ -324,6 +325,7 @@ bool comptonStatus::newMPS(int codaEventNumber, fadcdata* theFADCdata, vmeauxdat
   mpsSignal=theAuxData->GetMPSSignal();
   numTriggers=theFADCdata->GetSumsNumberTriggers(0); //number of calorimeter triggers
   dithering=theAuxData->GetDithering();
+  loadLED=theAuxData->GetLoadLEDBit();
 
   rtcavpol= theAuxData->GetCavityPolBit();  
   currentHelicityBit=theAuxData->GetHelicityBit(); //from input register 

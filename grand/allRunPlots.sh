@@ -15,7 +15,7 @@ else
   exit 1;
 fi
 
-for i in {$start..$end..20}
+for ((i=$start; i<=$end; i+=20))
 do
   ./groupRunPlots.sh $i
   sleep 10m
