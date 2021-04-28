@@ -1,9 +1,9 @@
-#include "../utils.h"
+#include "../online/utils.h"
 
 using namespace std;
 
 vector<vector<int>> findCycles(int runNum){
-  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), runNum));
+  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   string readStr;
   int cyclesInThisRun = 0;
   vector<vector<int>> run;
@@ -20,7 +20,7 @@ vector<vector<int>> findCycles(int runNum){
       cycle.push_back(limits[i]);
     run.push_back(cycle);
   }
-  printf("Looked in %s/cycles_%i.dat\n", getenv("COMPMON_MINIRUNS"), runNum);
+  printf("Looked in %s/cycles_%i.dat\n", getenv("COMPMON_CYCLES"), runNum);
   printf("Found %i cycles\n", (Int_t)run.size());
   return run;
 }
@@ -135,5 +135,5 @@ void whatsThePolarization(Int_t runNum){
   pt0->SetBorderSize(1); pt0->SetFillColor(0);
   pt0->Draw("same");
 
-  cPol->Print(Form("%s/plots/polarization_run%i.pdf", getenv("COMPMON_DIR"), runNum), "pdf");
+  cPol->Print(Form("%s/macros/plots/polarization_run%i.pdf", getenv("COMPMON_DIR"), runNum), "pdf");
 }

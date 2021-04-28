@@ -16,6 +16,7 @@
 
 using namespace std;
 
+/**
 vector<vector<int>> completeCycleList(int runNum){
   ifstream cycle_infile(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   string read_str;
@@ -31,9 +32,10 @@ vector<vector<int>> completeCycleList(int runNum){
   }
   return runCycles;
 }
+**/
 
 void plotAllCycles(int runNum){
-  vector<vector<int>> allCycles = completeCycleList(runNum);
+  vector<vector<int>> allCycles = getCycleList(runNum);
   //TFile *f = new TFile(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum), "READ");
   //TTree *mpswise = (TTree *)f->Get("mpswise");
   //TTree *quartetwise = (TTree *)f->Get("quartetwise");

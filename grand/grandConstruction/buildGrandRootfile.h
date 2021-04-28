@@ -15,8 +15,10 @@
 #include <istream>
 
 #include "vars.h"
+#include "plot.h"
 
 vector<vector<Float_t>> keys;
+vector<vector<Float_t>> corrs;
 Int_t numCyclesAcc;
 // cyc tree
 // basics
@@ -31,6 +33,9 @@ vector<DataVar> cycMPSData;
 // quartetwise
 //vector<vector<TString>> cycQrtVars;
 vector<DataVar> cycQrtData;
+vector<vector<FitPolVar>> cycBurstData;
+vector<FitPolVar> cycBurstAsymData;
+vector<PolVar> cycBurstComboData;
 //triggerwise
 //Float_t meanPedF, meanErrPedF, rmsPedF, rmsErrPedF;
 //Float_t meanPedL, meanErrPedL, rmsPedL, rmsErrPedL;
@@ -55,6 +60,7 @@ PolVar asym0, asym0NGC, asym0LasOn, asym0LasOff, asym0LasOff1, asym0LasOff2, pol
 PolVar asym4, asym4NGC, asym4LasOn, asym4LasOff, asym4LasOff1, asym4LasOff2, pol4;
 Int_t cycleCut;
 Float_t acc0OnMode, acc0OnOffset, acc0OffMode, acc0OffOffset;
+FitPolVar burstAsym0, burstAsym0NGC, burstAsym0LasOn, burstAsym0LasOff, burstAsym0LasOff1, burstAsym0LasOff2, burstPol0;
 
 // run tree
 // basics
@@ -65,15 +71,19 @@ vector<DataVar> runMPSData;
 // epicswise
 //vector<vector<TString>> runEpcVars;
 vector<StdVar> runEpcData;
+vector<PolVar> runBPMData;
 // calculations
 Float_t runTime;
 Int_t runSign;
-vector<Float_t> runPol0Avg, runPol0Err;
-vector<Float_t> runAsym0Avg, runAsym0Err;
-vector<Float_t> runAsym0NGCAvg, runAsym0NGCErr;
-vector<Float_t> runAsym0OnAvg, runAsym0OnErr;
-vector<Float_t> runAsym0OffAvg, runAsym0OffErr;
-FitPolVar runAsym0, runAsym0NGC, runAsym0On, runAsym0Off, runPol0;
+//vector<Float_t> runPol0Avg, runPol0Err;
+//vector<Float_t> runAsym0Avg, runAsym0Err;
+//vector<Float_t> runAsym0NGCAvg, runAsym0NGCErr;
+//vector<Float_t> runAsym0OnAvg, runAsym0OnErr;
+//vector<Float_t> runAsym0OffAvg, runAsym0OffErr;
+//FitPolVar runAsym0, runAsym0NGC, runAsym0On, runAsym0Off, runPol0;
+vector<vector<Float_t>> runPol0Avg, runPol0Err;
+vector<vector<Float_t>> runBurstAvg, runBurstErr;
+vector<FitPolVar> runPol0, runBurst;
 Float_t runQW1, runHW1, runQW2, runIHWP, runVWienAngle, runHWienAngle, runPhiFG;
 PolVar runLaserPol;
 
@@ -87,16 +97,23 @@ Int_t snailSign;
 //vector<Float_t> snlPol0Avg, snlPol0Err, snlPol4Avg, snlPol4Err;
 //vector<Float_t> snlAsym0Avg, snlAsym0Err, snlAsym4Avg, snlAsym4Err;
 //FitPolVar snlAsym0, snlAsym4, snlPol0, snlPol4;
-vector<Float_t> snlPol0Avg, snlPol0Err;
-vector<Float_t> snlAsym0Avg, snlAsym0Err;
-vector<Float_t> snlAsym0NGCAvg, snlAsym0NGCErr;
-vector<Float_t> snlAsym0OnAvg, snlAsym0OnErr;
-vector<Float_t> snlAsym0OffAvg, snlAsym0OffErr;
-FitPolVar snlAsym0, snlAsym0NGC, snlAsym0On, snlAsym0Off, snlPol0;
+vector<vector<Float_t>> snlPol0Avg, snlPol0Err;
+vector<vector<Float_t>> snlBurstAvg, snlBurstErr;
+//vector<Float_t> snlAsym0Avg, snlAsym0Err;
+//vector<Float_t> snlAsym0NGCAvg, snlAsym0NGCErr;
+//vector<Float_t> snlAsym0OnAvg, snlAsym0OnErr;
+//vector<Float_t> snlAsym0OffAvg, snlAsym0OffErr;
+//FitPolVar snlAsym0, snlAsym0NGC, snlAsym0On, snlAsym0Off, snlPol0;
+vector<FitPolVar> snlPol0, snlBurst;
 vector<Float_t> qw1Lst, hw1Lst, qw2Lst, ihwpLst, VWienAngleLst, HWienAngleLst, PhiFGLst;
 Float_t qw1, hw1, qw2, ihwp, VWienAngle, HWienAngle, PhiFG;
 //PolVar laserPol;
 Float_t laserPol;
+
+//snl tree support variables
+const Int_t nPolVars = 5;
+TString polNames[nPolVars] = {"Asym0", "Asym0NGC", "Asym0LasOn", "Asym0LasOff", "Pol0"};
+TString polTitles[nPolVars] = {"Asym0", "Asym0 NGC", "Asym0 On", "Asym0 Off", "Pol0"};
 
 Int_t helicityFreq(Int_t runNum){
   if(runNum > 4242 && runNum < 4622)
@@ -138,6 +155,11 @@ vector<vector<Float_t>> getCyclePositions(Int_t runNumber){
     cycBPMs.push_back(bpmLine);
   }
 
+  for(Int_t i = 0; i < runBPMVars; i++){
+    runBPMData[i].mean = cycBPMs[i][0];
+    runBPMData[i].meanErr = cycBPMs[i][1];
+  }
+
   //Float_t axErr = TMath::Sqrt(TMath::Power(cycMPSData[10].meanErr, 2));
   //Float_t ayErr = TMath::Sqrt(TMath::Power(cycMPSData[11].meanErr, 2));
   //Float_t bxErr = TMath::Sqrt(TMath::Power(cycMPSData[12].meanErr, 2));
@@ -160,14 +182,18 @@ void calcCollOffset(Int_t sNum, Int_t rNum){
     collCentX = 2.160; collCentXErr = 0.080;
     collCentY = 0.709; collCentYErr = 0.098;
   }
+  else if(sNum >= 100){
+    collCentX = -0.133; collCentXErr = 0.038;
+    collCentY = 0.747; collCentYErr = 0.021;
+  }
   vector<vector<Float_t>> bpms = getCyclePositions(rNum);
-  Float_t collPosX = bpms[2][0] + 6*(bpms[0][0] - bpms[2][0]); 
-  Float_t collPosY = bpms[3][0] + 6*(bpms[3][0] - bpms[1][0]);
+  Float_t collPosX = bpms[0][0] + 6*(bpms[2][0] - bpms[0][0]); 
+  Float_t collPosY = bpms[1][0] + 6*(bpms[3][0] - bpms[1][0]);
 
   Float_t xDiffErr = 6*TMath::Sqrt(TMath::Power(bpms[0][1], 2) + TMath::Power(bpms[2][1], 2));
   Float_t yDiffErr = 6*TMath::Sqrt(TMath::Power(bpms[1][1], 2) + TMath::Power(bpms[3][1], 2));
-  Float_t xProjErr = TMath::Sqrt(TMath::Power(bpms[2][1], 2) + TMath::Power(xDiffErr, 2));
-  Float_t yProjErr = TMath::Sqrt(TMath::Power(bpms[3][1], 2) + TMath::Power(yDiffErr, 2));
+  Float_t xProjErr = TMath::Sqrt(TMath::Power(bpms[0][1], 2) + TMath::Power(xDiffErr, 2));
+  Float_t yProjErr = TMath::Sqrt(TMath::Power(bpms[1][1], 2) + TMath::Power(yDiffErr, 2));
 
   Float_t collOffX = collPosX - collCentX;
   Float_t collOffY = collPosY - collCentY;
@@ -185,6 +211,23 @@ void prexAnPow(Int_t sNum){
   Float_t p0 = 0.0165612; Float_t p0Err = 9.98921E-4;
   Float_t p1 = -0.00001020; Float_t p1Err = 0.00001082;
   Float_t p2 =  0.00001591; Float_t p2Err = 0.00000267;
+
+  Float_t collOffSq = collOffset.mean*collOffset.mean;
+  Float_t collOffSqErr = TMath::Abs(collOffSq)*2*collOffset.meanErr/collOffset.mean;
+  Float_t t1 = p1*collOffset.mean;
+  Float_t t1Err = TMath::Abs(t1)*TMath::Sqrt(TMath::Power(p1Err/p1, 2) + TMath::Power(collOffset.meanErr/collOffset.mean, 2));
+  Float_t t2 = p2*collOffSq;
+  Float_t t2Err = TMath::Abs(t2)*TMath::Sqrt(TMath::Power(p2Err/p2, 2) + TMath::Power(collOffSqErr/collOffSq, 2));
+  anPow.mean = p0 + t1 + t2;
+  //anPow.meanErr = TMath::Sqrt(TMath::Power(p0Err, 2) + TMath::Power(t1Err, 2) + TMath::Power(t2Err, 2));
+  //anPow.mean = 0.01655915;
+  anPow.meanErr = 0.0;
+}
+
+void crexAnPow(Int_t sNum){
+  Float_t p0 = 0.036030604; Float_t p0Err = 2.4893E-5;
+  Float_t p1 = -1.6234E-5; Float_t p1Err = 1.8726E-5;
+  Float_t p2 =  6.248E-6; Float_t p2Err = 3.279E-6;
 
   Float_t collOffSq = collOffset.mean*collOffset.mean;
   Float_t collOffSqErr = TMath::Abs(collOffSq)*2*collOffset.meanErr/collOffset.mean;
@@ -235,8 +278,9 @@ void setAnalyzingPower(Int_t sNum, Int_t run_num){
     prexAnPow(sNum);
   }
   else if(run_num >= 4930){                                         //CREX runs
-    anPow.mean = 0.036017934;
-    anPow.meanErr = 0.0;
+    //anPow.mean = 0.036017934;
+    //anPow.meanErr = 0.0;
+    crexAnPow(sNum);
   }
   else{
     printf("Run doesn't have a defined analyzing power.\n");

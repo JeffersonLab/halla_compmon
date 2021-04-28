@@ -1,5 +1,5 @@
-#include "makePlots.h"
-#include "../buildGrandRootfile.h"
+#include "../grandOnline/makePlots.h"
+#include "../grandConstruction/buildGrandRootfile.h"
 
 #include <vector>
 

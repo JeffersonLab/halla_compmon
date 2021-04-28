@@ -1,7 +1,7 @@
 #!/bin/bash
 
-for i in {4340..4620..20}
+for i in {4300..4620..20}
 do
   ./group_online.sh $i
-  sleep 20m
+  sleep 30m
 done

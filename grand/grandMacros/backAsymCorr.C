@@ -14,12 +14,12 @@
 #include <vector>
 #include <fstream>
 
-#include "../vars.h"
-#include "makePlots.h"
+#include "../grandConstruction/vars.h"
+#include "../grandOnline/makePlots.h"
 
 void backAsymCorr(Int_t prexOrCrex){
   TString expt = experimentCode(prexOrCrex);
-  TFile *f = TFile::Open(Form("%s/%sGrandCompton.root", getenv("COMPMON_GRAND"), expt.Data()));
+  TFile *f = TFile::Open(Form("%s/aggregates/%sGrandCompton.root", getenv("COMPMON_WEB"), expt.Data()));
   TTree *cyc = (TTree *)f->Get("cyc");
 
   PolVar asym1, asym2;

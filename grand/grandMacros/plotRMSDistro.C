@@ -13,7 +13,7 @@
 #include <fstream>
 #include <istream>
 
-#include "../vars.h"
+#include "../grandConstruction/vars.h"
 
 using namespace std;
 
@@ -113,32 +113,54 @@ void cutDiffs(Float_t facLo, Float_t facHi){
 void plotRMSDistro(Int_t prexOrCrex, Float_t specFactor, Float_t specFactor2){
   TString exptStr("");
   TString exptName("");
+  Int_t onOffset = 0;
   if(prexOrCrex == 1){
     exptStr = "prex";
     exptName = "PREX-II";
+    onOffset = 0;
   }
   else if(prexOrCrex == 2){
     exptStr = "crex";
     exptName = "CREX";
+    onOffset = 100;
   }
   else{
     printf("Invalid Experiment Code\n");
     exit(1);
   }
-  ofstream keys; keys.open(Form("%s/prex_rmsCut.key", getenv("COMPMON_MAPS")));
+  ofstream keys; keys.open(Form("%s/%s_rmsCut.key", getenv("COMPMON_MAPS"), exptStr.Data()));
   
-  TFile *f = TFile::Open(Form("%s/%sGrandCompton.root", getenv("COMPMON_GRAND"), exptStr.Data()));
+  TFile *f = TFile::Open(Form("%s/backups/%sGrandCompton.root", getenv("COMPMON_GRAND"), exptStr.Data()));
   TTree *cyc = (TTree *)f->Get("cyc");
 
-  const Int_t nGroups = 14;
-  Int_t runStarts[nGroups] = {4301, 4310, 4342, 4344, 4353, 4371, 4405,
-                              4416, 4472, 4487, 4509, 4551, 4577, 4606};
-  Int_t runStops[nGroups] =  {4309, 4341, 4343, 4352, 4370, 4404, 4415,
-                              4471, 4486, 4508, 4550, 4576, 4605, 4622};
-  Int_t groupCuts[nGroups] = {0, 0, 0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0, 0, 0};
-  Int_t groupCycs[nGroups] = {0, 0, 0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0, 0, 0};
+  //const Int_t nGroups = 14;
+  //Int_t runStarts[nGroups] = {4301, 4310, 4342, 4344, 4353, 4371, 4405,
+  //                            4416, 4472, 4487, 4509, 4551, 4577, 4606};
+  //Int_t runStops[nGroups] =  {4309, 4341, 4343, 4352, 4370, 4404, 4415,
+  //                            4471, 4486, 4508, 4550, 4576, 4605, 4622};
+  //Int_t groupCuts[nGroups] = {0, 0, 0, 0, 0, 0, 0,
+  //                            0, 0, 0, 0, 0, 0, 0};
+  //Int_t groupCycs[nGroups] = {0, 0, 0, 0, 0, 0, 0,
+  //                            0, 0, 0, 0, 0, 0, 0};
+  const Int_t nGroups = 49;
+  Int_t runStarts[nGroups] = {4963, 4983, 4995, 5099, 5159, 5196, 5200,
+                              5297, 5303, 5306, 5317, 5355, 5444, 5489,
+                              5546, 5580, 5600, 5697, 5724, 5766, 5777, 
+                              5791, 5806, 5880, 5896, 5906, 5923, 5928, 
+                              5955, 5963, 5971, 6002, 6025, 6055, 6074,
+                              6082, 6096, 6105, 6129, 6142, 6148, 6149,
+                              6156, 6165, 6177, 6188, 6198, 6206, 6241};
+  Int_t runStops[nGroups] =  {4982, 4994, 5098, 5158, 5195, 5199, 5296,
+                              5302, 5305, 5316, 5354, 5443, 5488, 5545,
+                              5579, 5599, 5696, 5723, 5765, 5776, 5790, 
+                              5805, 5879, 5895, 5905, 5922, 5927, 5954,
+                              5962, 5970, 6001, 6024, 6054, 6073, 6081,
+                              6095, 6104, 6128, 6141, 6147, 6148, 6155,
+                              6164, 6176, 6187, 6197, 6205, 6240, 6254};
+  Int_t groupCuts[nGroups]; Int_t groupCycs[nGroups];
+  for(Int_t i = 0; i < nGroups; i++){
+    groupCuts[i] = 0; groupCycs[i] = 0;
+  }
   vector<vector<Float_t>> rmsOffLimits;
   vector<vector<Float_t>> rmsOnLimits;
   
@@ -178,10 +200,10 @@ void plotRMSDistro(Int_t prexOrCrex, Float_t specFactor, Float_t specFactor2){
       //rmsOffLimitsFac.push_back(factor*hOff->GetMean());  
       //rmsOnLimitsFac.push_back(factor*hOn->GetMean());
       if(atof(Form("%.3f", factor)) == 0.15){
-        printf("For factor 0.05 and run range %i-%i off limit is: %.4f because mode is %.4f\n", 
+        printf("For factor 0.15 and run range %i-%i off limit is: %.4f because mode is %.4f\n", 
                 runStarts[i], runStops[i], hOff->GetBinCenter(hOff->GetMaximumBin()) + factor, hOff->GetBinCenter(hOff->GetMaximumBin()));
         keys<<Form("%i,%i,%.4f,%.4f,%.4f,%i,%.2f,%.2f\n", runStarts[i], runStops[i], 
-                    hOff->GetBinCenter(hOff->GetMaximumBin()), hOn->GetBinCenter(hOn->GetMaximumBin()), factor, nBins, xmin, xmax);
+                    hOff->GetBinCenter(hOff->GetMaximumBin()), hOn->GetBinCenter(hOn->GetMaximumBin())+onOffset, factor, nBins, xmin, xmax);
       }
       rmsOffLimitsFac.push_back(hOff->GetBinCenter(hOff->GetMaximumBin()) + factor);
       rmsOnLimitsFac.push_back(hOn->GetBinCenter(hOn->GetMaximumBin()) + factor);
@@ -228,7 +250,8 @@ void plotRMSDistro(Int_t prexOrCrex, Float_t specFactor, Float_t specFactor2){
 
       Int_t flagOff1 = (Int_t)(acc0Off1.rms > rmsOffLimits[j][runRange]);
       Int_t flagOff2 = (Int_t)(acc0Off2.rms > rmsOffLimits[j][runRange]);
-      Int_t flagOn = (Int_t)(acc0On.rms > rmsOnLimits[j][runRange]);
+      //Int_t flagOn = (Int_t)(acc0On.rms > rmsOnLimits[j][runRange]);
+      Int_t flagOn = 0;
       Int_t fullFlag = 0x1*flagOff1 + 0x2*flagOff2 + 0x4*flagOn;
 
       if(factor == facStart){hRMS_full->Fill(acc0Off1.rms); hRMS_full->Fill(acc0Off2.rms);}

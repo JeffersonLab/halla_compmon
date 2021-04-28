@@ -102,6 +102,7 @@ if [ ! -f $COMP_ROOTFILES/compmon_$run_num.root ]; then
 fi
 
 root -l -b -q $COMPMON_LASERCYCLES/laserCycles.C\($run_num\)
+root -l -b -q $COMPMON_LASERCYCLES/bursts.C\($run_num,300\)
 
 if [ $max_evt -gt 0 ]; then
   root -q -b -l $COMPMON_ONLINE/dataQualityCheck.C\($run_num,$max_evt\)
@@ -112,6 +113,7 @@ fi
 if [ $web_upload == 1 ]; then
   root -q -b -l $COMPMON_ONLINE/writeToPDF.C\($run_num\)
   root -l -b -q $COMPMON_ONLINE/plotAllCycles.C\($run_num\)
+  root -l -b -q $COMPMON_ONLINE/plotAllBursts.C\($run_num\)
   python $COMPMON_ONLINE/write_html.py $DATE $TIME index.html
 fi
 
@@ -124,6 +126,10 @@ if [ $do_grand -eq 1 ]; then
   python3 $COMPMON_ONLINE/write_position_file.py $run_num
   $COMPMON_GRAND/runPlots.sh $run_num
 fi
+
+#rm -f $COMPMON_DIR/core.*
+#rm -f $COMPMON_ONLINE/core.*
+#rm -f $COMPMON_GRAND/grandConstruction/core.*
 
 echo "Online analysis finished for run $run_num"
 

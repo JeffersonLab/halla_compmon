@@ -50,6 +50,11 @@ void runwisePlots(Int_t prexOrCrex){
   for(Int_t i = 0; i < nOthVars; i++){
     plotStandardRun(fname.Data(), othVars[i].Data(), msmtNum++, othYmins[i], othYmaxs[i], othFloat[i]);
   }
+  for(Int_t i = 0; i < nPolVars; i++){
+    plotPolRun(fname.Data(), Form("Burst%s", polVars[i].Data()), msmtNum++, 0.99, 1.01, true, false, (i == 0 ? 100. : 1000.));
+    plotPolRun(fname.Data(), Form("Burst%s", polVars[i].Data()), msmtNum++, 0.90, 1.10, false, false, (i == 0 ? 100. : 1000.));
+    plotPolRun(fname.Data(), Form("Burst%s", polVars[i].Data()), msmtNum++, 0.00, 1.10, false, true);
+  }
 
   gSystem->Exec(Form("pdfunite %s/grandOnline/plots/msmt*.pdf %s/aggregates/%sGrandRunwise.pdf", 
                 getenv("COMPMON_GRAND"), getenv("COMPMON_WEB"), expt.Data()));

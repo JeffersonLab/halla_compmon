@@ -30,7 +30,7 @@ void snailwisePlots(Int_t prexOrCrex){
   //Float_t polYmax[nPolPlots] = {1.01, 1.01, 1.01, 1.01, 1.01, 1.10, 1.10, 1.10, 1.10, 1.10};
   //Float_t polFactors[nPolPlots] = {100., 1000., 1000., 1000., 1000., 100., 1000., 1000., 1000., 1000.};
   Float_t stdYmin[nStdPlots] = {0.0, 0.0, 0.0, 0.0, 0.99, 0.0, 0.0, 0.99};
-  Float_t stdYmax[nStdPlots] = {1.1, 0.0, 1.1, 1.1, 1.01, 1.1, 1.1, 1.01};
+  Float_t stdYmax[nStdPlots] = {1.1, 1.1, 1.1, 1.1, 1.01, 1.1, 1.1, 1.01};
   //Bool_t polSign[nPolPlots] = {true, true, true, true, true, false, false, false, false, false};
   Bool_t stdFloat[nStdPlots] = {false, false, false, true, true, true, true, true};
 
@@ -41,6 +41,11 @@ void snailwisePlots(Int_t prexOrCrex){
   }
   for(Int_t i = 0; i < nStdPlots; i++){
     plotStandardSnl(fname.Data(), stdVar[i].Data(), nMsmt++, stdYmin[i], stdYmax[i], stdFloat[i]);
+  }
+  for(Int_t i = 0; i < nPolPlots; i++){
+    plotPolSnl(fname.Data(), Form("Burst%s", polVar[i].Data()), nMsmt++, 0.99, 1.01, true, false, (i == 0 ? 100. : 1000.));
+    plotPolSnl(fname.Data(), Form("Burst%s", polVar[i].Data()), nMsmt++, 0.90, 1.10, false, false, (i == 0 ? 100. : 1000.));
+    plotPolSnl(fname.Data(), Form("Burst%s", polVar[i].Data()), nMsmt++, 0.00, 1.10, false, true);
   }
 
   gSystem->Exec(Form("pdfunite %s/grandOnline/plots/msmt*.pdf %s/aggregates/%sGrandSnailwise.pdf", 

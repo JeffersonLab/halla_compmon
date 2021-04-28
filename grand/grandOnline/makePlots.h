@@ -136,7 +136,7 @@ void drawAndPrintGraphs(TString msmt, Int_t msmtNum, TCanvas *can, vector<TGraph
   }
   //leg->AddEntry(g1, "Moller IHWP OUT");
   //leg->AddEntry(g2, "Moller IHWP IN");
-  //leg->Draw("same");
+  leg->Draw("same");
 
   can->Print(Form("%s/grandOnline/plots/msmt%04i_%s.pdf", getenv("COMPMON_GRAND"), msmtNum, msmt.Data()), "pdf");
   //exit(0);
@@ -194,7 +194,7 @@ void plotPolSnl(TString fname, TString msmt, Int_t msmtNum, Float_t smallFac, Fl
 
   for(Int_t i = 0; i < tree->GetEntries(); i++){
     tree->GetEntry(i);
-    if(sign == 0) continue;
+    if(sign == 0 || snailNum == 150 || snailNum == 151 || snailNum == 159 || snailNum == 160 || snailNum == 221) continue;
     Int_t ind = getGraphInd(snailNum, hWien, vWien, solWien, ihwp, true);
     Float_t polVar = factor*var.mean; Float_t polErr = factor*var.meanErr;
     if(signCorr){polVar = factor*var.mean*sign;}
@@ -207,6 +207,8 @@ void plotPolSnl(TString fname, TString msmt, Int_t msmtNum, Float_t smallFac, Fl
     if(snailNum - 1 < xmin){xmin = snailNum - 1;}
     if(snailNum + 1 > xmax){xmax = snailNum + 1;}
     //printf("<tr class=\"myRow\"><td class=\"myCell\">%i</td><td class=\"myCell\">%.4f +/ %.4f</td></tr>\n", snailNum, 1000*polVar, 1000*polErr);
+    //if(!chi2 && signCorr)
+      //printf("Pol0: %.4f +/- %.4f with %.4f / %i\n", factor*var.mean*sign, factor*var.meanErr*sign, var.Chi2, var.NDF);
   }
 
   adjustGraphLimits(graphs, ymin, ymax, smallFac, largeFac, xmin, xmax);
@@ -512,6 +514,62 @@ void plotStandardCyc(TString fname, TString msmt, Int_t msmtNum, Float_t smallFa
     //if(runNum - 5 < xmin){xmin = runNum - 5;}
     //if(runNum + 5 > xmax){xmax = runNum + 5;}
     graphCounts[ind] += 1;
+  }
+
+  adjustGraphLimits(graphs, ymin, ymax, smallFac, largeFac, xmin, xmax);
+  drawAndPrintGraphs(msmt, msmtNum, can, graphs);
+  grand->Close();
+}
+
+void plotBurstCyc(TString fname, TString msmt, Int_t msmtNum, Float_t smallFac, Float_t largeFac, bool signCorr=true, bool chi2=false, Float_t factor=1.0){
+  FitPolVar var;
+  vector<TGraphErrors *> graphs;
+  vector<Int_t> graphCounts;
+
+  TFile *grand = new TFile(Form("%s/aggregates/%s", getenv("COMPMON_WEB"), fname.Data()), "READ");
+  TTree *tree = (TTree *)grand->Get("cyc");
+  TString chiID(""); TString signID("");
+  if(chi2) chiID = "chi2";
+  if(signCorr) signID = "sign";
+  TString canName = Form("can%s%s_%s", signID.Data(), chiID.Data(), msmt.Data());
+  TCanvas *can = new TCanvas(canName.Data(), "Some Title", 1200, 400);
+  TString titleAdd(""); TString chiAdd("");
+  if(signCorr) titleAdd = " (Sign Corrected)";
+  if(chi2) chiAdd = " (Chi2 / NDF) ";
+  Float_t ymin = 1e16; Float_t ymax = -1e16;
+  Float_t xmin = 0; Float_t xmax = 1.05*tree->GetEntries("sign!=0 && CycleCut==0");
+
+  Int_t runNum, sign;
+  Float_t vWien, hWien, solWien, ihwp;
+  tree->SetBranchAddress("runNum", &runNum);
+  tree->SetBranchAddress("ihwp", &ihwp);
+  tree->SetBranchAddress("VWienAngle", &vWien);
+  tree->SetBranchAddress("HWienAngle", &hWien);
+  tree->SetBranchAddress("PhiFG", &solWien);
+  tree->SetBranchAddress("sign", &sign);
+  tree->SetBranchAddress(msmt.Data(), &var);
+  for(Int_t i = 0; i < 4; i++){
+    TGraphErrors *g = new TGraphErrors();
+    g->SetTitle(Form("%s%s%s vs Cycle", msmt.Data(), chiAdd.Data(), titleAdd.Data()));
+    g->GetXaxis()->SetTitle("cycleNum"); g->GetYaxis()->SetTitle(msmt.Data());
+    if(chi2) g->GetYaxis()->SetTitle(Form("%s (Chi2 / NDF)", msmt.Data()));
+    g->SetMarkerStyle(getMarkerStyle(i)); g->SetMarkerColor(getColor(i));
+    graphs.push_back(g); graphCounts.push_back(0);
+  }
+
+  for(Int_t i = 0; i < tree->GetEntries(); i++){
+    tree->GetEntry(i);    
+    Int_t ind = getGraphInd(runNum, hWien, vWien, solWien, ihwp, false);
+    Float_t polVar = factor*var.mean; Float_t polErr = factor*var.meanErr;
+    if(sign == 0 || TMath::IsNaN(polVar) || var.NDF==0) continue;
+    if(signCorr){polVar = factor*var.mean*sign;}
+    if(chi2){polVar = var.Chi2*1.0/var.NDF; polErr = 0.0;}
+    graphs[ind]->SetPoint(graphCounts[ind], runNum, polVar);
+    graphs[ind]->SetPointError(graphCounts[ind], 0.0, TMath::Abs(polErr));
+    graphCounts[ind] += 1;
+    if(polVar - polErr < ymin){ymin = polVar - polErr;}
+    if(polVar + polErr > ymax){ymax = polVar + polErr;}
+    //printf("<tr class=\"myRow\"><td class=\"myCell\">%i</td><td class=\"myCell\">%.4f +/ %.4f</td></tr>\n", snailNum, 1000*polVar, 1000*polErr);
   }
 
   adjustGraphLimits(graphs, ymin, ymax, smallFac, largeFac, xmin, xmax);

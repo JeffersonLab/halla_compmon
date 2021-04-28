@@ -41,12 +41,16 @@ void initBranches(TTree* cyc){
   for(Int_t i = 0; i < nPols; i++){PolVar pol; pols4.push_back(pol);}
   for(Int_t i = 0; i < nAccVars; i++){DataVar data; vars4.push_back(data);}
   for(Int_t i = 0; i < nVars; i++){DataVar data; vars.push_back(data);}
+  for(Int_t i = 0; i < nBursts; i++){FitPolVar data; burstVars.push_back(data);}
+  for(Int_t i = 0; i < nCombos; i++){PolVar data; comboVars.push_back(data);}
 
   for(Int_t i = 0; i < nPols; i++){cyc->SetBranchAddress(polNames0[i].Data(), &pols0[i]);}
   for(Int_t i = 0; i < nAccVars; i++){cyc->SetBranchAddress(varNames0[i].Data(), &vars0[i]);}
   for(Int_t i = 0; i < nPols; i++){cyc->SetBranchAddress(polNames4[i].Data(), &pols4[i]);}
   for(Int_t i = 0; i < nAccVars; i++){cyc->SetBranchAddress(varNames4[i].Data(), &vars4[i]);}
   for(Int_t i = 0; i < nVars; i++){cyc->SetBranchAddress(varNames[i].Data(), &vars[i]);}
+  for(Int_t i = 0; i < nBursts; i++){cyc->SetBranchAddress(burstNames[i].Data(), &burstVars[i]);}
+  for(Int_t i = 0; i < nCombos; i++){cyc->SetBranchAddress(comboNames[i].Data(), &comboVars[i]);}
 }
 
 void setPol0Strs(Int_t i){
@@ -75,6 +79,20 @@ void setPol4Strs(Int_t i){
     pol4Texts[i]->AddText(Form("Rel. Error: %.3f%%", 100.0*parErr/par));
   pol4Texts[i]->AddText(Form("Chi^2 / ndf: %f / %d", chi2, ndf));
   pol4Texts[i]->SetBorderSize(1); pol4Texts[i]->SetFillColor(0);
+}
+
+void setComboStrs(Int_t i){
+  Float_t par = comboFits[i]->GetParameter(0);
+  Float_t parErr = comboFits[i]->GetParError(0);
+  Float_t chi2 = comboFits[i]->GetChisquare();
+  Int_t ndf = comboFits[i]->GetNDF();
+
+  comboTexts[i]->AddText(Form("--------Fit Results--------"));
+  comboTexts[i]->AddText(Form("Mean +/- Err: %.3f +/- %.3f", par, parErr));
+  if(comboPcts[(Int_t)i/2])
+    comboTexts[i]->AddText(Form("Rel. Error: %.3f%%", 100.0*parErr/par));
+  comboTexts[i]->AddText(Form("Chi^2 / ndf: %f / %d", chi2, ndf));
+  comboTexts[i]->SetBorderSize(1); comboTexts[i]->SetFillColor(0);
 }
 
 void makePol0Plots(Int_t snlNum, Int_t *msmt){
@@ -139,7 +157,7 @@ void makePol4Plots(Int_t snlNum, Int_t *msmt){
       pol4Pull2Ds[i]->SetBinContent(j + 1, nDiffs); pol4Pulls[i]->Fill(nDiffs);
     }
     
-    setPol4Strs(i);
+    setComboStrs(i);
     pol4Hists[i]->SetStats(0);
     pol4Hists[i]->Draw("P");
     pol4Texts[i]->Draw("same");
@@ -198,7 +216,7 @@ void makeVar4Plots(Int_t snlNum, Int_t *msmt){
 void makeVarPlots(Int_t snlNum, Int_t *msmt){
   TString snailName = Form("snail%i", snlNum);
   TString outputDir(Form("%s/snails/%s", getenv("COMPMON_WEB"), snailName.Data()));
-  for(Int_t i = 0; i < 2*nAccVars; i++){
+  for(Int_t i = 0; i < 2*nVars; i++){
     TString canName = Form("cAccVar_%s", varNames[(Int_t)i/2].Data());
     if(i % 2 == 1)
       canName = Form("cAccVar_%s_RMS", varNames[(Int_t)i/2].Data());
@@ -209,6 +227,64 @@ void makeVarPlots(Int_t snlNum, Int_t *msmt){
     varHists[i]->Draw("P");
     c->Print(Form("%s/agg_plots_%04i.pdf", outputDir.Data(), (*msmt)++), "pdf");
   }
+}
+
+void makeBurstPlots(Int_t snlNum, Int_t *msmt){
+  TString snailName = Form("snail%i", snlNum);
+  TString outputDir(Form("%s/snails/%s", getenv("COMPMON_WEB"), snailName.Data()));
+  for(Int_t i = 0; i < 2*nAccVars; i++){
+    TString canName = Form("cBurstVar_%s", burstNames[(Int_t)i/2].Data());
+    if(i % 2 == 1){
+      canName = Form("cBurstVar_%s_Chi2", burstNames[(Int_t)i/2].Data());
+      burstHists[i]->SetMarkerStyle(3);
+    }
+    printf("MSMT #%i: %s\n", *msmt, canName.Data());
+    TCanvas *c = new TCanvas(canName.Data(), "Burst Var Canvas", 1200, 400);
+    c->SetGridx(1); c->SetGridy(1);
+    burstHists[i]->SetStats(0);
+    burstHists[i]->Draw("P");
+    c->Print(Form("%s/agg_plots_%04i.pdf", outputDir.Data(), (*msmt)++), "pdf");
+  }
+}
+
+void makeComboPlots(Int_t snlNum, Int_t *msmt){
+  TString snailName = Form("snail%i", snlNum);
+  TString outputDir(Form("%s/snails/%s", getenv("COMPMON_WEB"), snailName.Data()));
+  for(Int_t i = 0; i < 2*nCombos; i++){
+    TString cutAdd("");
+    if(i % 2 == 0){cutAdd = "NoCut";}
+    TCanvas *c = new TCanvas(Form("cPol%s_%s", cutAdd.Data(), comboNames[(Int_t)i/2].Data()), "Pol Canvas", 1200, 600);
+    TPad *pPol1 = new TPad(Form("pPol1%s_%s", cutAdd.Data(), comboNames[(Int_t)i/2].Data()), "Pol Avg", 0.0, 0.3, 0.7, 1.0);
+    pPol1->SetGridx(1); pPol1->SetGridy(1);
+    TPad *pPol2 = new TPad(Form("pPol2%s_%s", cutAdd.Data(), comboNames[(Int_t)i/2].Data()), "Pol Pull Plot", 0.7, 0.0, 1.0, 1.0);
+    TPad *pPol3 = new TPad(Form("pPol3%s_%s", cutAdd.Data(), comboNames[(Int_t)i/2].Data()), "Pol Pull Graph", 0.0, 0.0, 0.7, 0.3);
+    pPol3->SetGridx(1); pPol3->SetGridy(1);
+    pPol1->Draw(); pPol2->Draw(); pPol3->Draw();
+
+    pPol1->cd();
+    comboHists[i]->Fit(comboFits[i], "Q", "", 0, nCycles);
+    Float_t par = comboFits[i]->GetParameter(0);
+    for(Int_t j = 0; j < nCycles; j++){
+      Float_t nDiffs = (comboHists[i]->GetBinContent(j + 1) - par)/comboHists[i]->GetBinError(j + 1);
+      comboPull2Ds[i]->SetBinContent(j + 1, nDiffs); comboPulls[i]->Fill(nDiffs);
+    }
+    
+    setComboStrs(i);
+    comboHists[i]->SetStats(0);
+    comboHists[i]->Draw("P");
+    comboTexts[i]->Draw("same");
+
+    pPol2->cd();
+    comboPulls[i]->SetStats(220);
+    comboPulls[i]->Draw();
+    
+    pPol3->cd();
+    comboPull2Ds[i]->SetStats(0);
+    comboPull2Ds[i]->Draw();
+
+    c->Print(Form("%s/agg_plots_%04i.pdf", outputDir.Data(), (*msmt)++), "pdf");
+  }
+  //return msmt;
 }
 
 void aggregateGrand(Int_t snlNum){
@@ -269,6 +345,31 @@ void aggregateGrand(Int_t snlNum){
       varHists[j+1]->SetBinError(nBin, vars[(Int_t)j/2].rmsErr);
       if(nBin % 3 == 1){
         varHists[j]->GetXaxis()->SetBinLabel(nBin, Form("%i.%i", runNum, cycleNum));
+        varHists[j+1]->GetXaxis()->SetBinLabel(nBin, Form("%i.%i", runNum, cycleNum));
+      }
+    }
+    for(Int_t j = 0; j < 2*nBursts; j+=2){
+      burstHists[j]->SetBinContent(nBin, burstVars[(Int_t)j/2].mean);
+      burstHists[j]->SetBinError(nBin, burstVars[(Int_t)j/2].meanErr);
+      if(burstVars[(Int_t)j/2].NDF == 0){burstHists[j+1]->SetBinContent(nBin, 0.0);}
+      else{burstHists[j+1]->SetBinContent(nBin, burstVars[(Int_t)j/2].Chi2*1.0/burstVars[(Int_t)j/2].NDF);}
+      if(nBin % 3 == 1){
+        burstHists[j]->GetXaxis()->SetBinLabel(nBin, Form("%i.%i", runNum, cycleNum));
+        burstHists[j+1]->GetXaxis()->SetBinLabel(nBin, Form("%i.%i", runNum, cycleNum));
+      }
+    }
+    for(Int_t j = 0; j < 2*nCombos; j+=2){
+      comboHists[j+1]->SetBinContent(nBin, comboVars[(Int_t)(j/2)].mean*comboMults[(Int_t)(j/2)]);
+      comboHists[j+1]->SetBinError(nBin, comboVars[(Int_t)(j/2)].meanErr*comboMults[(Int_t)(j/2)]);
+      if(nBin % 3 == 1){
+        comboHists[j+1]->GetXaxis()->SetBinLabel(nBin, Form("%i.%i", runNum, cycleNum));
+      }
+      if(cycCut == 0){
+        comboHists[j]->SetBinContent(nBinCut, comboVars[(Int_t)(j/2)].mean*comboMults[(Int_t)(j/2)]);
+        comboHists[j]->SetBinError(nBinCut, comboVars[(Int_t)(j/2)].meanErr*comboMults[(Int_t)(j/2)]);
+      }
+      if(nBinCut % 3 == 1 && cycCut == 0){
+        comboHists[j]->GetXaxis()->SetBinLabel(nBinCut, Form("%i.%i", runNum, cycleNum));
       }
     }
     nBin++;
@@ -282,6 +383,8 @@ void aggregateGrand(Int_t snlNum){
   //makePol4Plots(snlNum, &msmt);
   //makeVar4Plots(snlNum, &msmt);
   makeVarPlots(snlNum, &msmt);
+  makeBurstPlots(snlNum, &msmt);
+  makeComboPlots(snlNum, &msmt);
 
   TString outputDir = Form("%s/snails/snail%i", getenv("COMPMON_WEB"), snlNum);
   gSystem->Exec(Form("pdfunite %s/agg_plots_*.pdf %s/snail%i_agg_plots.pdf", outputDir.Data(), outputDir.Data(), snlNum));

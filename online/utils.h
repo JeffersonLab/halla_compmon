@@ -64,6 +64,29 @@ vector<TChain *> loadChain(Int_t runnum){
   return chains;
 }
 
+vector<vector<int>> getCycleList(int runNum, Bool_t burstMode=false){
+  ifstream cycle_infile;   
+  if(burstMode)
+    cycle_infile.open(Form("%s/bursts_%i.dat", getenv("COMPMON_BURSTS"), runNum));
+  else    
+    cycle_infile.open(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
+  if(!cycle_infile.is_open()){
+    printf("ERROR: couldn't open file!\n");
+  }
+  string read_str;
+  vector<vector<int>> runCycles;
+  while(getline(cycle_infile, read_str)){
+    vector<int> limits; stringstream ss(read_str);
+    for(int i; ss >> i;){
+      limits.push_back(i);
+      if(ss.peek() == ',')
+        ss.ignore();
+    }
+    runCycles.push_back(limits);
+  }
+  return runCycles;
+}
+
 Double_t get_analyzing_power(int run_num){
   if(run_num < 3800){return 0.1105;}
   else if(run_num >= 4232 && run_num <= 4929){return 0.01655915;}
@@ -149,7 +172,7 @@ TString get_wien_state(TFile *infile, Int_t run_num){
 }
 
 Int_t numValidLaserCycles(Int_t run_num){
-  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_MINIRUNS"), run_num));
+  ifstream infile(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), run_num));
   string read_str;
   Int_t nValidCycles = 0;
   while(getline(infile, read_str)){

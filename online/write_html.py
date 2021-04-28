@@ -144,7 +144,8 @@ def create_unsorted_plot_list(run_mode, max_sorted_run):
                 ('quartet.pdf', 'Multiplet Variables'),
                 ('asymmetries.pdf', 'Multiplet Asymmetries'),
                 ('backgrounds.pdf', 'Background Detectors'),
-                ('cycle_qVars.pdf', 'Laser Cycles')]
+                ('cycle_qVars.pdf', 'Laser Cycles'),
+                ('burst_qVars.pdf', 'Bursts')]
   block_str = 3*spaces + '<h4>Unsorted Runs</h4>\n' + 3*spaces + '<ul>\n'
   for run in unsorted_runlist:
     block_str += 4*spaces + '<li><a href=\'runs/Run' + str(run) + '/\'>Run ' + str(run) + '</a>: &ensp;\n'
@@ -162,7 +163,8 @@ def create_prex_plot_list(run_mode, runs_to_write):
                 ('quartet.pdf', 'Multiplet Variables'),
                 ('asymmetries.pdf', 'Multiplet Asymmetries'),
                 ('backgrounds.pdf', 'Background Detectors'),
-                ('cycle_qVars.pdf', 'Laser Cycles')]
+                ('cycle_qVars.pdf', 'Laser Cycles'),
+                ('burst_qVars.pdf', 'Bursts')]
   snail_list = os.listdir(os.environ['COMPMON_SNAILS']);
   snail_list_trim = []
   for el in snail_list:

@@ -27,7 +27,7 @@ typedef struct{
   int runNum;
 
   Float_t helicityFreq(){
-    if(runNum > 4242 && runNum < 4621){return 240.0;}
+    if(runNum > 4242 && runNum < 4641){return 240.0;}
     else{return 120.0;}
   }
   bool mpsIsInPeriod(int mpsCoda){return (mpsCoda >= mpsStart && mpsCoda <= mpsEnd);}
@@ -87,6 +87,8 @@ typedef struct{
   bool evaluateEventCuts(vector<vector<int>> eventCuts){
     bool noEventCuts = true;
     for(vector<int> cut : eventCuts){
+      //printf("  Event cut is: %i - %i\n", cut[0], cut[1]);  
+      //printf("  Cycle limits are: %i - %i", mpsStart, mpsEnd); 
       noEventCuts = noEventCuts && !((cut[0] <= mpsStart && cut[1] >= mpsStart) || (cut[0] <= mpsEnd && cut[1] >= mpsEnd) || 
                                      (cut[0] <= mpsStart && cut[1] >= mpsEnd) || (cut[0] >= mpsStart && cut[1] <= mpsEnd));
     }
@@ -96,7 +98,7 @@ typedef struct{
     bool correctPattern = firstOff.isOff() && on.isOn() && lastOff.isOff();
     bool laserOnBeamOn = on.duration()*on.fracBeamOn() > 3.0;
     //bool laserOffBeamOn = firstOffFracBeamOn()*100 > 10.0 && lastOffFracBeamOn()*100 > 10.0;
-    bool laserOffBeamOn = firstOffBeamOnEntry*1.0/30.0 > 3.0 && lastOffBeamOnEntry > 3.0;
+    bool laserOffBeamOn = firstOffBeamOnEntry*1.0/30.0 > 3.0 && lastOffBeamOnEntry*1.0/30.0 > 3.0;
     bool periodSeparation12 = (on.mpsStart - firstOff.mpsEnd)*1.0/on.helicityFreq() < 10.0;
     bool periodSeparation23 = (lastOff.mpsStart - on.mpsEnd)*1.0/on.helicityFreq() < 10.0;
     //bool narrowPedestal = pedRMSFirstOff < 0.1 && pedRMSOn < 0.1 && pedRMSLastOff < 0.1;

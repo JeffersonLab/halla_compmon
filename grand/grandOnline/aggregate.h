@@ -53,13 +53,30 @@ TString varNames4[nAccVars] = {"Acc4LasOn", "Acc4LasOff1", "Acc4LasOff2", "Acc4B
 vector<DataVar> vars4;
 vector<TH1F *> var4Hists;
 
-const Int_t nVars = 20;
+const Int_t nVars = 23;
 TString varNames[nVars] = {"LaserPower", "BeamCurrent", "bpmAx", "bpmAy", "bpmBx", "bpmBy", 
                            "CentralRateLasOn", "CentralRateLasOff", "USbg1", "USbg2","DSbg1", "DSbg2", 
                            "HFingerLasOn", "HFingerLasOff", "VFingerLasOn", "VFingerLasOff",
-                           "diff_bpmAx", "diff_bpmAy", "diff_bpmBx", "diff_bpmBy"};
+                           "diff_bpmAx", "diff_bpmAy", "diff_bpmBx", "diff_bpmBy",
+                           "AsymBCMLasOn", "AsymBCMLasOff1", "AsymBCMLasOff2"};
 vector<DataVar> vars;
 vector<TH1F *> varHists;
+
+const Int_t nBursts = 20;
+TString burstNames[nBursts] = {"BurstPosAcc0LasOn",   "BurstNegAcc0LasOn",   "BurstDiffAcc0LasOn",   "BurstSummAcc0LasOn",   "BurstAsym0LasOn",
+                               "BurstPosAcc0LasOff1", "BurstNegAcc0LasOff1", "BurstDiffAcc0LasOff1", "BurstSummAcc0LasOff1", "BurstAsym0LasOff1",
+                               "BurstPosAcc0LasOff2", "BurstNegAcc0LasOff2", "BurstDiffAcc0LasOff2", "BurstSummAcc0LasOff2", "BurstAsym0LasOff2",
+                               "BurstPosAcc0LasOff",  "BurstNegAcc0LasOff",  "BurstDiffAcc0LasOff",  "BurstSummAcc0LasOff",  "BurstAsym0LasOff"};
+vector<FitPolVar> burstVars;
+vector<TH1F *> burstHists;
+
+const Int_t nCombos = 3;
+TString comboNames[nCombos] = {"BurstAsym0NGC", "BurstAsym0", "BurstPol0"};
+Bool_t comboPcts[nCombos] = {true, true, true};
+Float_t comboMults[nCombos] = {1000.0, 1000.0, 100.0};
+vector<PolVar> comboVars; vector<TF1 *> comboFits;
+vector<TH1F *> comboHists; vector<TH1F *> comboPulls;
+vector<TH1F *> comboPull2Ds; vector<TPaveText *> comboTexts;
 
 vector<Bool_t> isPol;
 
@@ -112,6 +129,25 @@ void initHists(Int_t snlNum){
     TH1F *h = new TH1F(Form("h%s_%s", hNameAdd.Data(), varNames[(Int_t)i/2].Data()), hName.Data(), nCycles, 0, nCycles);
     varHists.push_back(h);
   }
+  for(Int_t i = 0; i < 2*nBursts; i++){
+    TString hName = Form("Snail %i: %s vs Cycle", snlNum, burstNames[(Int_t)i/2].Data());
+    TString hNameAdd("");
+    if(i % 2 == 1){hName = Form("Snail %i: %s Chi2 / NDF vs Cycle", snlNum, burstNames[(Int_t)i/2].Data()); hNameAdd = "Chi2";}
+    TH1F *h = new TH1F(Form("h%s_%s", hNameAdd.Data(), burstNames[(Int_t)i/2].Data()), hName.Data(), nCycles, 0, nCycles);
+    burstHists.push_back(h);
+  }
+  for(Int_t i = 0; i < 2*nCombos; i++){
+    TString cutAdd("");
+    if(i % 2 == 1) cutAdd = "NoCut";
+    TH1F *h; TH1F *hPull2D;
+    if(i % 2 == 0){h = new TH1F(Form("h%s_%s", cutAdd.Data(), comboNames[(Int_t)(i/2)].Data()), Form("Snail %i: %s vs Cycle", snlNum, comboNames[(Int_t)(i/2)].Data()), nCyclesCut, 0, nCyclesCut);}
+    else{h = new TH1F(Form("h%s_%s", cutAdd.Data(), comboNames[(Int_t)(i/2)].Data()), Form("Snail %i: %s vs Cycle (No CycleCut)", snlNum, comboNames[(Int_t)(i/2)].Data()), nCycles, 0, nCycles);}
+    TH1F *hPull = new TH1F(Form("hPull%s_%s", cutAdd.Data(), comboNames[(Int_t)(i/2)].Data()), Form("%s Pull Plot", comboNames[(Int_t)(i/2)].Data()), 40, -8, 8);
+    if(i % 2 == 0){hPull2D = new TH1F(Form("hPull2D%s_%s", cutAdd.Data(), comboNames[(Int_t)(i/2)].Data()), "", nCyclesCut, 0, nCyclesCut);}
+    else{hPull2D = new TH1F(Form("hPull2D%s_%s", cutAdd.Data(), comboNames[(Int_t)(i/2)].Data()), "", nCycles, 0, nCycles);}
+    hPull2D->SetLineColor(kGreen); hPull2D->SetFillColor(kGreen);
+    comboHists.push_back(h); comboPulls.push_back(hPull); comboPull2Ds.push_back(hPull2D);
+  }
 }
 
 void initFits(){
@@ -127,6 +163,14 @@ void initFits(){
     TPaveText *pt4 = new TPaveText(0.7, 0.75, 0.98, 0.92, "blNDC");
     pol0Texts.push_back(pt0);
     pol4Texts.push_back(pt4);
+  }
+  for(Int_t i = 0; i < 2*nCombos; i++){
+    TString fName0 = Form("f_%s", comboNames[(Int_t)i/2].Data());
+    TF1 *f0 = new TF1(fName0.Data(), "pol0");
+    comboFits.push_back(f0);
+
+    TPaveText *pt0 = new TPaveText(0.7, 0.75, 0.98, 0.92, "blNDC");
+    comboTexts.push_back(pt0);
   }
 }
 

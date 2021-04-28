@@ -36,7 +36,7 @@ TString cycMPSNames[cycMPSVars] = {"Acc0/NAcc0", "Acc0/NAcc0", "Acc0/NAcc0", "Ac
                                    "bpmBx", "bpmBy", "scaler_ip13", "scaler_ip13", "scaler_run4", "scaler_run13",
                                    "scaler_run0", "scaler_run1", "scaler_run10", "scaler_run10", "scaler_run11", "scaler_run11"};
 
-const Int_t cycQrtVars = 47;
+const Int_t cycQrtVars = 49;
 TString cycQrtTitles[cycQrtVars] = {"PosAcc0LasOn",   "NegAcc0LasOn",   "DiffAcc0LasOn",   "SumAcc0LasOn",
                                     "PosAcc0LasOff1", "NegAcc0LasOff1", "DiffAcc0LasOff1", "SumAcc0LasOff1",
                                     "PosAcc0LasOff2", "NegAcc0LasOff2", "DiffAcc0LasOff2", "SumAcc0LasOff2",
@@ -48,7 +48,7 @@ TString cycQrtTitles[cycQrtVars] = {"PosAcc0LasOn",   "NegAcc0LasOn",   "DiffAcc
                                     "diff_bpmAx", "diff_bpmAy", "diff_bpmBx", "diff_bpmBy",
                                     "AsymCentralRateLasOn", "AsymCentralRateLasOff", "AsymHFingerRateLasOn", "AsymHFingerRateLasOff",
                                     "AsymVFingerRateLasOn", "AsymVFingerRateLasOff", "AsymUSbg1", "AsymUSbg2",
-                                    "AsymDSbg1", "AsymDSbg2", "AsymBCM"};
+                                    "AsymDSbg1", "AsymDSbg2", "AsymBCMLasOn", "AsymBCMLasOff1", "AsymBCMLasOff2"};
 TString cycQrtNames[cycQrtVars] =  {pos0, neg0, Form("%s - %s", pos0.Data(), neg0.Data()), Form("%s + %s", pos0.Data(), neg0.Data()),
                                     pos0, neg0, Form("%s - %s", pos0.Data(), neg0.Data()), Form("%s + %s", pos0.Data(), neg0.Data()),
                                     pos0, neg0, Form("%s - %s", pos0.Data(), neg0.Data()), Form("%s + %s", pos0.Data(), neg0.Data()),
@@ -68,6 +68,8 @@ TString cycQrtNames[cycQrtVars] =  {pos0, neg0, Form("%s - %s", pos0.Data(), neg
                                     "(PosHelScalerRun13 - NegHelScalerRun13)/(PosHelScalerRun13 + NegHelScalerRun13)",
                                     "(PosHelScalerRun0 - NegHelScalerRun0)/(PosHelScalerRun0 + NegHelScalerRun0)",
                                     "(PosHelScalerRun1 - NegHelScalerRun1)/(PosHelScalerRun1 + NegHelScalerRun1)",
+                                    "(PosHelBCM - NegHelBCM)/(PosHelBCM + NegHelBCM)", 
+                                    "(PosHelBCM - NegHelBCM)/(PosHelBCM + NegHelBCM)",
                                     "(PosHelBCM - NegHelBCM)/(PosHelBCM + NegHelBCM)"};
 
 const Int_t runMPSVars = 23;
@@ -85,6 +87,10 @@ TString runEpcTitles[runEpcVars] = {"tablePosX", "tablePosY", "qw1", "hw1", "qw2
                                     "targetPos", "VWienAngle", "HWienAngle", "PhiFG"};
 TString runEpcNames[runEpcVars]  = {"epics_tablePosX", "epics_tablePosY", "epics_qw1", "epics_hw1", "epics_qw2", "epics_ihwp_in", 
                                     "epics_targetPos", "epics_VWienAngle", "epics_HWienAngle", "epics_PhiFG"};
+
+const Int_t runBPMVars = 4;
+TString runBPMTitles[runBPMVars] = {"epics_bpmAx", "epics_bpmAy", "epics_bpmBx", "epics_bpmBy"};
+
 const Int_t runSignVars = 4;
 Int_t runSignInds[runSignVars] = {8, 7, 9, 5};
 
@@ -201,7 +207,8 @@ void cycQrtPlots(TChain *quartetwise, Int_t runNum, Int_t cycNum, vector<int> cy
                                   Form("(%s) && (%s)", B1L1D0.Data(), cycCut.Data()), Form("(%s) && (%s)", B1L0D0.Data(), cycCut.Data()), //AsymHFingerRateLasOn, AsymHFingerRateLasOff
                                   Form("(%s) && (%s)", B1D0.Data(), cycCut.Data()), Form("(%s) && (%s)", B1D0.Data(), cycCut.Data()),     //AsymUSbg1, AsymUSbg2
                                   Form("(%s) && (%s)", B1D0.Data(), cycCut.Data()), Form("(%s) && (%s)", B1D0.Data(), cycCut.Data()),     //AsymDSbg1, AsymDSbg2
-                                  Form("(%s) && (%s)", B1D0.Data(), cycCut.Data())};                                                      //AsymBCM
+                                  Form("(%s) && (%s)", B1D0.Data(), per2.Data()), Form("(%s) && (%s)", B1D0.Data(), per1.Data()),         //AsymBCMLasOn, AsymBCMLasOff1
+                                  Form("(%s) && (%s)", B1D0.Data(), per3.Data())};                                                        //AsymBCMLasOff2
   Int_t sum0OnInd = 3;
   Int_t sum0Off1Ind = 7;
   Int_t sum0Off2Ind = 11;
@@ -362,7 +369,7 @@ void runEpicsPlots(TChain *epicswise, TChain* mpswise, Int_t runNum, TFile *runO
     if(mapCuts.CompareTo("") != 0){
       cuts = Form("%s && %s", varCuts[i].Data(), mapCuts.Data());
     }
-    if(i < 2 || i > 4){
+    if(i < 2 || (i > 4 && i < 7)){
       mpswise->Project(hName.Data(), runEpcNames[i].Data(), cuts.Data());
       TH1F *h = (TH1F *)gDirectory->Get(hName.Data());
       runOut->cd();

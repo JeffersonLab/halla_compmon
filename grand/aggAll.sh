@@ -15,6 +15,7 @@ else
   exit 1;
 fi
 
+root -l -b -q $COMPMON_GRAND/grandConstruction/buildGrandRootfile.C\($1\)
 for ((i=$start; i<=$end; i++))
 do
   ./aggregate.sh -s $i --nogrand

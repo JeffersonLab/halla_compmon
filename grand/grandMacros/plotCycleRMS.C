@@ -13,7 +13,7 @@
 #include <fstream>
 #include <istream>
 
-#include "../vars.h"
+#include "../grandConstruction/vars.h"
 
 using namespace std;
 
@@ -33,7 +33,7 @@ void plotCycleRMS(Int_t prexOrCrex){
     exit(1);
   }
   
-  TFile *f = TFile::Open(Form("%s/%sGrandCompton.root", getenv("COMPMON_GRAND"), exptStr.Data()));
+  TFile *f = TFile::Open(Form("%s/backups/%sGrandCompton.root", getenv("COMPMON_GRAND"), exptStr.Data()));
   TTree *cyc = (TTree *)f->Get("cyc");
   
   Int_t runNum, cycNum;
@@ -59,7 +59,7 @@ void plotCycleRMS(Int_t prexOrCrex){
     hL->SetBinError(i+1, lOff.rmsErr);
     hO->SetBinContent(i+1, on.rms);
     hO->SetBinError(i+1, on.rmsErr);
-    if(i % 4 == 0){
+    if(i % 50 == 0){
       hF->GetXaxis()->SetBinLabel(i+1, Form("%i.%i", runNum, cycNum));
       hL->GetXaxis()->SetBinLabel(i+1, Form("%i.%i", runNum, cycNum));
       hO->GetXaxis()->SetBinLabel(i+1, Form("%i.%i", runNum, cycNum));

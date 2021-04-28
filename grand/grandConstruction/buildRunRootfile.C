@@ -11,6 +11,7 @@
 
 #include "buildGrandRootfile.h"
 #include "plot.h"
+#include "burst.h"
 
 using namespace std;
 
@@ -122,6 +123,8 @@ void buildRunRootfile(Int_t runNum){
     **/
     printf("  Plotting triggerwise vars...\n");
     cycTrgPlots(triggerwise, runNum, c+1, cycles[c], runOut);
+    printf("  Plotting burst vars...\n");
+    cycBurstPlots(quartetwise, runNum, c+1, runOut);
   }
   printf("  Plotting run mps vars...\n");
   runMPSPlots(mpswise, runNum, runOut);

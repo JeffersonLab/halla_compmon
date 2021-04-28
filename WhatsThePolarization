@@ -7,5 +7,5 @@ fi
 
 runNum=$1
 root -l -b -q $COMPMON_DIR/macros/whatsThePolarization.C\($runNum\)
-evince $COMPMON_DIR/plots/polarization_run$runNum.pdf
-rm -f $COMPMON_DIR/plots/polarization_run$runNum.pdf
+evince $COMPMON_DIR/macros/plots/polarization_run$runNum.pdf
+rm -f $COMPMON_DIR/macros/plots/polarization_run$runNum.pdf
