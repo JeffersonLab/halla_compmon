@@ -111,8 +111,48 @@ Float_t getLaserPol(Int_t snlNum, Float_t qw1Deg, Float_t hw1Deg){
   }
   //CREX Conditions
   else{
-    return 1.0;
+    if(isCloseTo(qw1Deg, 39.3)){
+      if(isCloseTo(hw1Deg, 63.5)){return 0.9974;}
+      else if(isCloseTo(hw1Deg, 73.0)){return 0.9945;}
+      else if(isCloseTo(hw1Deg, 56.0)){return 0.9901;}
+      else{return 0.0;}
+    }
+    else if(isCloseTo(qw1Deg, 37.0)){
+      if(isCloseTo(hw1Deg, 63.5)){return 0.9918;}
+      else{return 0.0;}
+    }
+    else if(isCloseTo(qw1Deg, 43.5)){
+      if(isCloseTo(hw1Deg, 63.5)){return 0.9933;}
+      else{return 0.0;}
+    }
+    else if(isCloseTo(qw1Deg, 50.5)){
+      if(isCloseTo(hw1Deg, 27.4)){return 0.9974;}
+      else{return 0.0;}
+    }
+    else{return 0.0;}
   }
+}
+
+Float_t crexLaserPolErr(Float_t qw1Deg, Float_t hw1Deg){
+  if(isCloseTo(qw1Deg, 39.3)){
+    if(isCloseTo(hw1Deg, 63.5)){return 0.0026;}
+    else if(isCloseTo(hw1Deg, 73.0)){return 0.0043;}
+    else if(isCloseTo(hw1Deg, 56.0)){return 0.0061;}
+    else{return 0.0;}
+  }
+  else if(isCloseTo(qw1Deg, 37.0)){
+    if(isCloseTo(hw1Deg, 63.5)){return 0.0052;}
+    else{return 0.0;}
+  }
+  else if(isCloseTo(qw1Deg, 43.5)){
+    if(isCloseTo(hw1Deg, 63.5)){return 0.0042;}
+    else{return 0.0;}
+  }
+  else if(isCloseTo(qw1Deg, 50.5)){
+    if(isCloseTo(hw1Deg, 27.4)){return 0.0026;}
+    else{return 0.0;}
+  }
+  else{return 0.0;}
 }
 
 void calcCycLaserPol(Int_t snlNum){
@@ -125,7 +165,7 @@ void calcCycLaserPol(Int_t snlNum){
   
   cycLaserPol.mean = getLaserPol(snlNum, qw1Deg, hw1Deg);
   if(snlNum < 100 || snlNum == 500){cycLaserPol.meanErr = 0.0038*cycLaserPol.mean;}
-  else{cycLaserPol.meanErr = 0.0;}
+  else{cycLaserPol.meanErr = crexLaserPolErr(qw1Deg, hw1Deg);}
 }
 
 void calcRunLaserPol(Int_t snlNum){
@@ -138,7 +178,7 @@ void calcRunLaserPol(Int_t snlNum){
   
   runLaserPol.mean = getLaserPol(snlNum, qw1Deg, hw1Deg);
   if(snlNum < 100 || snlNum == 500){runLaserPol.meanErr = 0.0038*runLaserPol.mean;}
-  else{runLaserPol.meanErr = 0.0;}
+  else{runLaserPol.meanErr = crexLaserPolErr(qw1Deg, hw1Deg);}
 }
 
 void calcSnailLaserPol(Int_t snlNum){

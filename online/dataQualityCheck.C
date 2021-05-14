@@ -414,7 +414,7 @@ void trig_sum_plots(TChain* somethingwise, int run_num, TFile* outfile, TString 
   TString beamON("beamState==1"); TString beamOFF("beamState==0");
   TString hel0("helicityStateReported==0"); TString hel1("helicityStateReported==1");
   TString laserCuts[2] = {laserON, laserOFF}; TString beamCuts[2] = {beamON, beamOFF}; TString helCuts[2] = {hel0, hel1};
-  TString extraCuts(Form("sumIsRandom==0 && abs(sumPre - 3790)<10 && sum>0 && sum<50e3 && mpsCoda<%i", max_event));
+  TString extraCuts(Form("sumIsRandom==0 && abs(sumPre - 3790)<10 && sum>0 && sum<75e3 && mpsCoda<%i", max_event));
 
   TString name = Form("%s_%s", tree_id.Data(), msmt_id.Data());
   TString title = Form("Run %i %s, %s: All", run_num, tree_id.Data(), msmt_id.Data());
