@@ -296,8 +296,8 @@ bankstructure THaCodaFile::getNextSubbank(int verbose){
 	   CurrentSubbank.Tag,CurrentSubbank.DataWords);
     if(verbose>1){
       for (int i=0; i<min(verbose,CurrentSubbank.DataWords); i++){
-	int j=Index+i;
-	printf(" %5d      %10d   %8x \n",j,ROCData[j],ROCData[j]);
+	      int j=Index+i;
+	      printf(" %5d      %10d   %8x \n",j,ROCData[j],ROCData[j]);
       }
     }
   }

@@ -6,9 +6,11 @@
 #include <TObject.h>
 #include <TH1F.h>
 #include <TGraph.h>
+#include <TMultiGraph.h>
 #include <TPad.h>
 #include <TString.h>
 #include <THStack.h>
+#include <TMath.h>
 #include <vector>
 #include <math.h>
 #include <fstream>
@@ -65,16 +67,17 @@ vector<TChain *> loadChain(Int_t runnum){
 }
 
 vector<vector<int>> getCycleList(int runNum, Bool_t burstMode=false){
+  vector<vector<int>> runCycles;
   ifstream cycle_infile;   
   if(burstMode)
     cycle_infile.open(Form("%s/bursts_%i.dat", getenv("COMPMON_BURSTS"), runNum));
   else    
     cycle_infile.open(Form("%s/cycles_%i.dat", getenv("COMPMON_CYCLES"), runNum));
   if(!cycle_infile.is_open()){
-    printf("ERROR: couldn't open file!\n");
+    printf("ERROR: couldn't open laser cycles file!\n");
+    return runCycles;
   }
   string read_str;
-  vector<vector<int>> runCycles;
   while(getline(cycle_infile, read_str)){
     vector<int> limits; stringstream ss(read_str);
     for(int i; ss >> i;){
@@ -99,6 +102,29 @@ Double_t get_analyzing_power(int run_num){
 
 Double_t get_analyzing_power_error(int run_num){
   return 0.0;
+}
+
+TString getCycleCuts(Int_t runNum, Int_t mode=0){
+  vector<vector<int>> cycles = getCycleList(runNum);
+  TString var = mode == 0 ? "mpsCoda" : "firstMPSnumber";
+  TString cycleCuts = "(";
+  for(Int_t i = 0; i < cycles.size(); i++){
+    if(i == 0)
+      cycleCuts += Form("(%s>=%i && %s<=%i)", var.Data(), cycles[i][0], var.Data(), cycles[i][5]);
+    else    
+      cycleCuts += Form(" || (%s>=%i && %s<=%i)", var.Data(), cycles[i][0], var.Data(), cycles[i][5]);
+  }
+  cycleCuts += ")";
+  return cycleCuts;
+}
+
+Bool_t mpsInCycle(vector<vector<int>> runCycles, Int_t mpsNum){
+  for(Int_t i = 0; i < runCycles.size(); i++){
+    if(mpsNum >= runCycles[i][0] && mpsNum <= runCycles[i][5]){
+      return kTRUE;
+    }
+  }
+  return kFALSE;
 }
 
 TString translate(int beam, int las){
@@ -420,39 +446,56 @@ void breakdown_pad(TFile *infile, int run_num, TString output_path, TPad *myPad,
 }
 
 void acc0_time_pad(TFile *infile, int run_num, TString output_path, TPad *myPad, bool printfile=false){
-  TString tree_name("mpswise");
-  TString data_name("acc0_time");
-  myPad->Divide(2, 2);
+  TString treeName("mpswise");
+  TString dataName("acc0_time");
+  const Int_t nGraphs = 8;
+  Float_t xmin = 1e16; Float_t xmax = -1e16;
+  Float_t ymin = 1e16; Float_t ymax = -1e16;
+  TGraph *graphs[8];
+  for(Int_t beam = 0; beam < 2; beam++){
+    for(Int_t las = 0; las < 2; las++){
+      for(Int_t hel = 0; hel < 2; hel++){
+        Int_t ind = 4*beam + 2*las + hel;
+        TString gName = Form("%s_beam%i_las%i_hel%i_%s", treeName.Data(), beam, las, hel, dataName.Data());
+        graphs[ind] = (TGraph *)infile->Get(gName.Data());
+        if(graphs[ind]->GetN() > 0){
+          Float_t locXmin = TMath::MinElement(graphs[ind]->GetN(), graphs[ind]->GetX());
+          Float_t locXmax = TMath::MaxElement(graphs[ind]->GetN(), graphs[ind]->GetX());
+          Float_t locYmin = TMath::MinElement(graphs[ind]->GetN(), graphs[ind]->GetY());
+          Float_t locYmax = TMath::MaxElement(graphs[ind]->GetN(), graphs[ind]->GetY());
+          xmin = (locXmin < xmin) ? locXmin : xmin;
+          xmax = (locXmax > xmax) ? locXmax : xmax;
+          ymin = (locYmin < ymin) ? locYmin : ymin;
+          ymax = (locYmax > ymax) ? locYmax : ymax;
+        }
+      }
+    }
+  }
 
   gStyle->SetOptStat(0);
-  for(int las = 0; las < 2; las++){
-    TGraph *g_pos0 = (TGraph *)infile->Get(Form("%s_beam1_las%i_hel0_%s", tree_name.Data(), las, data_name.Data()));
-    TGraph *g_pos1 = (TGraph *)infile->Get(Form("%s_beam1_las%i_hel1_%s", tree_name.Data(), las, data_name.Data()));
-    TGraph *g_pos0_OFF = (TGraph *)infile->Get(Form("%s_beam0_las%i_hel0_%s", tree_name.Data(), las, data_name.Data()));
-    TGraph *g_pos1_OFF = (TGraph *)infile->Get(Form("%s_beam0_las%i_hel1_%s", tree_name.Data(), las, data_name.Data()));
-    myPad->cd(1);
-    if(las == 0){
-      g_pos0->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, all events", run_num, tree_name.Data()));
-      g_pos0->Draw("ap");
+  myPad->Divide(2, 2);
+  const Int_t nPlots = 4;
+  Int_t startInds[nPlots] = {0, 0, 6, 4};
+  Int_t endInds[nPlots] = {7, 3, 7, 5};
+  TString plotNames[nPlots] = {"all", "beam0", "beam1_las1", "beam1_las0"};
+  TString plotLabels[nPlots] = {"All", "Beam OFF", "Beam ON, Laser ON", "Beam ON, Laser OFF"};
+  TMultiGraph *multis[nPlots];
+  for(Int_t plot = 0; plot < nPlots; plot++){
+    myPad->cd(plot + 1);
+    TString gTitle = Form("Run %i %s, Acc0 vs Time: %s", run_num, treeName.Data(), plotLabels[plot].Data());
+    multis[plot] = new TMultiGraph(Form("mg_%s_%s_%s", treeName.Data(), plotNames[plot].Data(), dataName.Data()), gTitle.Data());
+    for(Int_t i = startInds[plot]; i <= endInds[plot]; i++){
+      multis[plot]->Add(graphs[i]);
     }
-    else{g_pos0->Draw("p");}
-    g_pos1->Draw("p");
-    if(las == 0){
-      myPad->cd(2);
-      g_pos0_OFF->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, beam OFF", run_num, tree_name.Data())); g_pos0_OFF->Draw("ap");
-      g_pos1_OFF->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, %s", run_num, tree_name.Data(), translate(1, las).Data())); g_pos1_OFF->Draw("p");
-    }
-    else{
-      myPad->cd(2);
-      g_pos0_OFF->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, beam OFF", run_num, tree_name.Data())); g_pos0_OFF->Draw("p");
-      g_pos1_OFF->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, %s", run_num, tree_name.Data(), translate(1, las).Data())); g_pos1_OFF->Draw("p");
-    }
-    myPad->cd(3 + (int)!las);
-    g_pos0->SetTitle(Form("Run %i %s, Acc0/NAcc0:mpsCoda, %s", run_num, tree_name.Data(), translate(1, las).Data()));
-    g_pos0->Draw("ap"); g_pos1->Draw("p");
+    multis[plot]->GetXaxis()->SetTitle("mpsCoda");
+    multis[plot]->GetYaxis()->SetTitle("Acc0/NAcc0");
+    multis[plot]->GetXaxis()->SetLimits(xmin, xmax); multis[plot]->GetXaxis()->SetRangeUser(xmin, xmax);
+    multis[plot]->GetYaxis()->SetLimits(ymin, ymax); multis[plot]->GetYaxis()->SetRangeUser(ymin, ymax);
+    multis[plot]->Draw("ap");
   }
+  
   if(printfile)
-    myPad->Print(Form("%s/%s.png", output_path.Data(), data_name.Data()), "png");
+    myPad->Print(Form("%s/%s.png", output_path.Data(), dataName.Data()), "png");
 }
 
 void quartet_pad(TFile *infile, int run_num, TString output_path, TPad *myPad, TString data_name, bool printfile=false){

@@ -281,9 +281,9 @@ void stepRandomSnapshot(int run, int startEntry = -1)
       }
       avg /= Double_t(numSamples);
       //sumsum=lped-sumsum;
-      gHist->Draw();
       gStepRandomSnapshotNextEntry=entry+1;
       //std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(835381- sumsum) << std::endl;
+      gHist->Draw();
       std::cout << "Plotted!! MinY: " << minY << ", minX: " << minX << ", maxY: " << maxY << ", sum: " <<(sumsum)  << ", avg: " << avg << std::endl;
       return;
     }

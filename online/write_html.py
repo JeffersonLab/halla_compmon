@@ -168,14 +168,14 @@ def create_prex_plot_list(run_mode, runs_to_write):
   snail_list = os.listdir(os.environ['COMPMON_SNAILS']);
   snail_list_trim = []
   for el in snail_list:
-    if "~" not in el and '#' not in el: snail_list_trim += [el]
+    if "~" not in el and '#' not in el and "escargatoires" not in el: snail_list_trim += [el]
   snail_list = sorted(snail_list_trim, key=lambda fname: int(fname.replace("snail","").replace(".list", ""))); snail_list.reverse()
   snails_and_runs = []
   snail_strs = {}
   for snail in snail_list:
     snail_num = int(snail.replace("snail", "").replace(".list", ""))
-    if (snail_num > 99 and snail_num != 500) and run_mode == 'prex': continue
-    elif (snail_num <= 99 or snail_num == 500) and run_mode == 'crex': continue
+    if (snail_num > 99) and run_mode == 'prex': continue
+    elif (snail_num <= 99 or snail_num >= 300) and run_mode == 'crex': continue
     title = "Snail " + str(snail_num)
     if snail_num == 150 or snail_num == 151 or snail_num == 159 or snail_num == 160 or \
        snail_num == 220 or snail_num == 221: 
@@ -199,7 +199,8 @@ def create_prex_plot_list(run_mode, runs_to_write):
         #snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/asymmetries_acc0.pdf\'>Asymmetries (Acc0)</a>&ensp;\n'
         #snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/polarization_acc4.pdf\'>Polarization (Acc4)</a>&ensp;\n'
         #snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/asymmetries_acc4.pdf\'>Asymmetries (Acc4)</a>&ensp;\n'
-        snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/snail' + snail[0].split(' ')[1] + '_agg_plots.pdf\'>Snail Plots (All Accs, Cycles)</a>&ensp;\n'
+        snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/snail' + snail[0].split(' ')[1] + '_agg_plots.pdf\'>Snail Plots (Cyclewise)</a>&ensp;\n'
+        snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/snail' + snail[0].split(' ')[1] + '_run_agg_plots.pdf\'>Snail Plots (Runwise)</a>&ensp;\n'
         #snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/polarization_acc0_cycles.pdf\'>Polarization (Acc0)</a>&ensp;\n'
         #snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/polarization_acc4_cycles.pdf\'>Polarization (Acc4)</a>&ensp;\n'
         snail_strs[snail[0]] += 5*spaces + '<a href=\'snails/snail' + snail[0].split(' ')[1] + '/polarization_acc0.pdf\'>Polarization (Acc0, miniruns)</a>&ensp;\n'

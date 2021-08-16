@@ -60,6 +60,8 @@ fi
 run_code=2
 if [ "$snail_num" -lt 100 ]; then
   run_code=1
+elif [ "$snail_num" -gt 299 ]; then
+  run_code=3
 fi
 
 #root -l -b -q miniruns.C\(\"snail${snail_num}\"\)
@@ -69,12 +71,17 @@ fi
 #root -l -b -q aggregate.C\(\"snail${snail_num}\",0,1\)
 #root -l -b -q aggregate.C\(\"snail${snail_num}\",4,1\)
 
-if [ $do_grand -eq 1 ]; then
+if [ $do_grand -eq 1 ] && [ "$run_code" -ne 3 ]; then
   root -l -b -q $COMPMON_GRAND/grandConstruction/buildGrandRootfile.C\($run_code\)
 fi
-root -l -b -q $COMPMON_GRAND/grandOnline/aggregateGrand.C\(${snail_num}\)
-if [ $do_expt_plots -eq 1 ]; then
-  $COMPMON_GRAND/exptPlots.sh $run_code
+if [ "$run_code" -ne 3 ]; then
+  root -l -b -q $COMPMON_GRAND/grandOnline/aggregateGrand.C\(${snail_num}\)
+  root -l -b -q $COMPMON_GRAND/grandOnline/runwiseAggregate.C\(${snail_num}\)
+  if [ $do_expt_plots -eq 1 ]; then
+    $COMPMON_GRAND/exptPlots.sh $run_code
+  fi
+else
+  root -l -b -q $COMPMON_GRAND/grandOnline/aggregateSnailGroup.C\(${snail_num}\)
 fi
 #root -l -b -q $COMPMON_GRAND/grandMacros/snailwisePlots.C\($run_code\)
 #root -l -b -q $COMPMON_GRAND/grandMacros/runwisePlots.C\($run_code\)

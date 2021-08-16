@@ -3,7 +3,7 @@
 #source /raid1/cornejo/clmeg_repo/repo.sh jl_2.0
 #bin/compmon -c compmon_cmu.config $*
 
-configfile=compmon_prex.config
+configfile=$COMPMON_DIR/config/compmon_prex.config
 removeconflictingrootfiles=true
 
 if $removeconflictingrootfiles;

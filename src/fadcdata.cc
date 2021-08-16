@@ -78,18 +78,22 @@ int fadcdata::UnpackAllSubbanks(THaCodaFile* codaData, vmeauxdata* theVMEauxdata
     while(subbank.Tag>0){
       subbank=codaData->getNextSubbank(0); //arg=# verbose words to print out
       if(subbank.Tag>0){
-	if(subbank.Tag==0x212){
-	  UnpackSamples(subbank); //Waveform samples
-	}else if (subbank.Tag==0x211){
-	  UnpackAccumulators(subbank);  //accumulator readout
-	}else if (subbank.Tag==0x210){
-	  theVMEauxdata->Unpack(subbank);  //AuxInfo (scaler reads, etc.)
+	      if(subbank.Tag==0x212){
+	        UnpackSamples(subbank); //Waveform samples
+	      }
+        else if (subbank.Tag==0x211){
+	        UnpackAccumulators(subbank);  //accumulator readout
+	      }
+        else if (subbank.Tag==0x210){
+      	  theVMEauxdata->Unpack(subbank);  //AuxInfo (scaler reads, etc.)
 	  //	      theVMEauxdata->DebugDump(5);
-	}else if (subbank.Tag==0x213){
-	  UnpackSums(subbank,0,1);  //subbank,verbose,abort on error
-	}else {
-	  printf("Unknown subbank tag %x \n",subbank.Tag);
-	}
+	      }
+        else if (subbank.Tag==0x213){
+      	  UnpackSums(subbank,0,1);  //subbank,verbose,abort on error
+	      }
+        else {
+	        printf("Unknown subbank tag %x \n",subbank.Tag);
+	      }
       }
     }
   return 0;

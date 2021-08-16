@@ -115,7 +115,7 @@ int main(int argc, char** argv)
   TString dataPostfix = ".dat";
   TString outPath = "/data/cmuwork";
   TString outPrefix ="compmon_";
-  TString paramsFileName = "compmon.params";
+  TString paramsFileName = Form("%s/config/compmon.params", getenv("COMPMON_DIR"));
   // First, open up the config file and change any hard coded setting here
   fstream inConfig;
   inConfig.open(configFile,std::ios::in);

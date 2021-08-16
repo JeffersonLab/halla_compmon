@@ -50,7 +50,7 @@ void writeSnailwiseFile(Int_t prexOrCrex){
   TTree *snl = (TTree *)f->Get("snl");
 
   FitPolVar pol0, asymOff;
-  Int_t sign, snlNum;
+  Int_t sign, snlNum, year, month, day, hour, minute, second;
   Float_t qw1, hw1, ihwp, vWien, hWien, solWien;
 
   snl->SetBranchAddress("Pol0", &pol0);
@@ -63,13 +63,23 @@ void writeSnailwiseFile(Int_t prexOrCrex){
   snl->SetBranchAddress("HWienAngle", &hWien);
   snl->SetBranchAddress("PhiFG", &solWien);
   snl->SetBranchAddress("snailNum", &snlNum);
+  snl->SetBranchAddress("year", &year);
+  snl->SetBranchAddress("month", &month);
+  snl->SetBranchAddress("day", &day);
+  snl->SetBranchAddress("hour", &hour);
+  snl->SetBranchAddress("minute", &minute);
+  snl->SetBranchAddress("second", &second);
 
   ofstream outfile(Form("%s/aggregates/%sCompton.csv", getenv("COMPMON_WEB"), exptStr.Data()));
   outfile<<Form("//Pol0 (pct), Pol0 Err (pct), Chi2, NDF, ihwp state, vert Wien Angle, horiz Wien Angle, solenoid Wien Angle, calculated sign, qw1 setting, hw1 setting\n");
   for(Int_t i = 0; i < snl->GetEntries(); i++){
     snl->GetEntry(i);
-    outfile<<Form("%03i,%.2f,%.2f,%3.2f,%03i,%s,%3.4f,%3.4f,%3.4f,%i,%05i,%05i\n",
-                  snlNum, 100*pol0.mean, 100*pol0.meanErr, pol0.Chi2, pol0.NDF, ihwpStateName(ihwp).Data(), vWien, hWien, solWien, sign, (Int_t)qw1, (Int_t)hw1);
+    TString polMsmt = Form("%.2f,%.2f,%3.2f,%03i", 100*pol0.mean, 100*pol0.meanErr, pol0.Chi2, pol0.NDF);
+    TString signStr = Form("%s,%3.4f,%3.4f,%3.4f,%i", ihwpStateName(ihwp).Data(), vWien, hWien, solWien, sign);
+    TString laser = Form("%05i,%05i", (Int_t)qw1, (Int_t)hw1);
+    TString date = Form("%04i-%02i-%02i", year, month, day);
+    TString time = Form("%02i:%02i:%02i", hour, minute, second);
+    outfile<<Form("%03i,%s,%s,%s,%s,%s\n", snlNum, polMsmt.Data(), signStr.Data(), laser.Data(), date.Data(), time.Data());
   }
   outfile.close();
   printf("...Done!\n");

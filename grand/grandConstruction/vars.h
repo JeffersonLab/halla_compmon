@@ -1,18 +1,20 @@
 #ifndef vars_h
 #define vars_h
 
-#include "TCanvas.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TH1F.h"
-#include "TString.h"
-#include "TMath.h"
-#include "TF1.h"
-
-#include <vector>
-#include <string>
+#include <TFile.h>
+#include <TTree.h>
+#include <TGraph.h>
+#include <TH1F.h>
+#include <TGraphErrors.h>
+#include <TString.h>
+#include <TMath.h>
+#include <TF1.h>
+#include <TPaveText.h>
+#include <iostream>
 #include <fstream>
-#include <istream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 typedef struct {Float_t mean, meanErr, rms, rmsErr;} DataVar;
 typedef struct {Float_t mean, meanErr;} PolVar;

@@ -53,6 +53,8 @@ Float_t meanSum4LasOff, meanErrSum4LasOff, meanSum4LasOff1, meanErrSum4LasOff1, 
 PolVar anPow;
 PolVar collOffset;
 Float_t alphaOn, alphaOff;
+Float_t radCorr;
+Float_t anPowRatio;
 PolVar sigSubSum0, sigSubSum4;
 PolVar asym0LasOnAlt, asym0LasOffAlt, asym0LasOff1Alt, asym0LasOff2Alt;
 PolVar asym4LasOnAlt, asym4LasOffAlt, asym4LasOff1Alt, asym4LasOff2Alt;
@@ -107,6 +109,7 @@ vector<vector<Float_t>> snlBurstAvg, snlBurstErr;
 vector<FitPolVar> snlPol0, snlBurst;
 vector<Float_t> qw1Lst, hw1Lst, qw2Lst, ihwpLst, VWienAngleLst, HWienAngleLst, PhiFGLst;
 Float_t qw1, hw1, qw2, ihwp, VWienAngle, HWienAngle, PhiFG;
+Int_t snlYear, snlMonth, snlDay, snlHour, snlMinute, snlSecond;
 //PolVar laserPol;
 Float_t laserPol;
 
@@ -114,6 +117,8 @@ Float_t laserPol;
 const Int_t nPolVars = 5;
 TString polNames[nPolVars] = {"Asym0", "Asym0NGC", "Asym0LasOn", "Asym0LasOff", "Pol0"};
 TString polTitles[nPolVars] = {"Asym0", "Asym0 NGC", "Asym0 On", "Asym0 Off", "Pol0"};
+vector<Float_t> backAsymTracker;
+const Int_t trackerSize = 25;
 
 Int_t helicityFreq(Int_t runNum){
   if(runNum > 4242 && runNum < 4622)
@@ -211,6 +216,7 @@ void prexAnPow(Int_t sNum){
   Float_t p0 = 0.0165612; Float_t p0Err = 9.98921E-4;
   Float_t p1 = -0.00001020; Float_t p1Err = 0.00001082;
   Float_t p2 =  0.00001591; Float_t p2Err = 0.00000267;
+  anPowRatio = 1.0;
 
   Float_t collOffSq = collOffset.mean*collOffset.mean;
   Float_t collOffSqErr = TMath::Abs(collOffSq)*2*collOffset.meanErr/collOffset.mean;
@@ -218,16 +224,18 @@ void prexAnPow(Int_t sNum){
   Float_t t1Err = TMath::Abs(t1)*TMath::Sqrt(TMath::Power(p1Err/p1, 2) + TMath::Power(collOffset.meanErr/collOffset.mean, 2));
   Float_t t2 = p2*collOffSq;
   Float_t t2Err = TMath::Abs(t2)*TMath::Sqrt(TMath::Power(p2Err/p2, 2) + TMath::Power(collOffSqErr/collOffSq, 2));
-  anPow.mean = p0 + t1 + t2;
+  anPow.mean = anPowRatio*(p0 + t1 + t2);
   //anPow.meanErr = TMath::Sqrt(TMath::Power(p0Err, 2) + TMath::Power(t1Err, 2) + TMath::Power(t2Err, 2));
   //anPow.mean = 0.01655915;
-  anPow.meanErr = 0.0;
+  anPow.meanErr = anPowRatio*0.0;
 }
 
 void crexAnPow(Int_t sNum){
   Float_t p0 = 0.036030604; Float_t p0Err = 2.4893E-5;
   Float_t p1 = -1.6234E-5; Float_t p1Err = 1.8726E-5;
   Float_t p2 =  6.248E-6; Float_t p2Err = 3.279E-6;
+  // anPowRatio = 3.6124/3.6070;                      // 2183.50 MeV / 2180.0 MeV
+  anPowRatio = 3.6107/3.6070;                         // 2182.42 MeV / 2180.0 MeV
 
   Float_t collOffSq = collOffset.mean*collOffset.mean;
   Float_t collOffSqErr = TMath::Abs(collOffSq)*2*collOffset.meanErr/collOffset.mean;
@@ -235,10 +243,11 @@ void crexAnPow(Int_t sNum){
   Float_t t1Err = TMath::Abs(t1)*TMath::Sqrt(TMath::Power(p1Err/p1, 2) + TMath::Power(collOffset.meanErr/collOffset.mean, 2));
   Float_t t2 = p2*collOffSq;
   Float_t t2Err = TMath::Abs(t2)*TMath::Sqrt(TMath::Power(p2Err/p2, 2) + TMath::Power(collOffSqErr/collOffSq, 2));
-  anPow.mean = p0 + t1 + t2;
+  // anPow.mean = p0 + t1 + t2;
+  anPow.mean = anPowRatio*p0;
   //anPow.meanErr = TMath::Sqrt(TMath::Power(p0Err, 2) + TMath::Power(t1Err, 2) + TMath::Power(t2Err, 2));
   //anPow.mean = 0.01655915;
-  anPow.meanErr = 0.0;
+  anPow.meanErr = anPowRatio*0.0;
 }
 
 /**

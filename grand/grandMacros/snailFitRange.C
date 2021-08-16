@@ -58,9 +58,13 @@ TString getLegendEntry(Int_t inOrOut, Int_t index){
   return Form("%s %s", wien.Data(), ihwp.Data());
 }
 
-void snailFitRange(Int_t prexOrCrex, Int_t startSnail, Int_t endSnail){
+void snailFitRange(Int_t prexOrCrex, Int_t startSnail, Int_t endSnail, Int_t polDeg){
   if(endSnail <= startSnail){
-    printf("Invalid snail combination. List snail range from start to finish, including more than one snail.");
+    printf("Invalid snail combination. List snail range from start to finish, including more than one snail.\n");
+  }
+  if(polDeg > 1 || polDeg < 0){
+    printf("Please choose either zero or one for polynomial degree, higher orders not implemented yet.\n");
+    exit(-1);
   }
   TString expt = experimentCode(prexOrCrex);
   TFile *f = TFile::Open(Form("%s/aggregates/%sGrandCompton.root", getenv("COMPMON_WEB"), expt.Data()));
@@ -75,7 +79,7 @@ void snailFitRange(Int_t prexOrCrex, Int_t startSnail, Int_t endSnail){
   snl->SetBranchAddress("sign", &sign);
   snl->SetBranchAddress("ihwp", &ihwp);
 
-  TF1 *fit = new TF1("fit", "pol0");
+  TF1 *fit = new TF1("fit", Form("pol%i", polDeg));
 
   TGraphErrors *g = new TGraphErrors();
   g->SetMarkerStyle(20);
@@ -106,7 +110,22 @@ void snailFitRange(Int_t prexOrCrex, Int_t startSnail, Int_t endSnail){
   g->SetTitle("Polarization Fits (Excluding Snails taken with <100% DOCP)");
   g->GetXaxis()->SetTitle("snailNum");
   g->GetYaxis()->SetTitle("Pol0 [pct]");
+  g->GetXaxis()->SetRangeUser(startSnail - 1, endSnail + 1);
   g->Draw("ap");
+
+  TPaveText *pt = new TPaveText(0.70, 0.75, 0.90, 0.90, "blNDC");
+  pt->SetFillColor(0);
+  pt->SetBorderSize(1);
+  pt->AddText(Form("----Snail %i-%i Fit----", startSnail, endSnail));
+  if(polDeg == 0){
+    pt->AddText(Form("Mean: %.4f +/- %.4f", fit->GetParameter(0), fit->GetParError(0)));
+  }
+  else{
+    pt->AddText(Form("P0: %.4f +/- %.4f", fit->GetParameter(0), fit->GetParError(0)));
+    pt->AddText(Form("P1: %.4f +/- %.4f", fit->GetParameter(1), fit->GetParError(1)));
+  }
+  pt->AddText(Form("Chi2 / NDF: %.4f / %i", fit->GetChisquare(), fit->GetNDF()));
+  pt->Draw("same");
   
   // TLegend *leg = new TLegend(0.75, 0.35, 0.9, 0.2);
   // leg->AddEntry(gOUT[0], getLegendEntry(0, 0));

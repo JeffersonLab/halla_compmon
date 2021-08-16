@@ -51,6 +51,7 @@ void whatsThePolarization(Int_t runNum){
     ptErr->AddText("Too few laser cycles. (Need >= 5.)\n");
     ptErr->AddText(Form("Found %i laser cycles.\n", (Int_t)cycles.size()));
     pPol->cd(); ptErr->Draw();
+    cPol->Print(Form("%s/macros/plots/polarization_run%i.pdf", getenv("COMPMON_DIR"), runNum), "pdf");
     return;
   }
 

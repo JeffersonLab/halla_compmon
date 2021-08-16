@@ -39,6 +39,34 @@ void readCorrsFile(TString expt){
   keysfile.close();
 }
 
+
+void readTimeFile(Int_t runNum){
+  
+  ifstream timefile(Form("%s/Run%i_time.txt", getenv("COMPMON_RUNPLOTS"), runNum));
+  if(timefile.is_open()){
+    string line;
+    getline(timefile, line);
+    TString allString(line.c_str());
+    TObjArray *allTokens = allString.Tokenize(" ");
+    TString dateString = ((TObjString *)allTokens->At(0))->String();
+    TString timeString = ((TObjString *)allTokens->At(1))->String();
+    TObjArray *dateTokens = dateString.Tokenize("-");
+    TObjArray *timeTokens = timeString.Tokenize(":");
+
+    snlYear   = atoi( ((TObjString *)dateTokens->At(0))->String() );
+    snlMonth  = atoi( ((TObjString *)dateTokens->At(1))->String() );
+    snlDay    = atoi( ((TObjString *)dateTokens->At(2))->String() );
+    snlHour   = atoi( ((TObjString *)timeTokens->At(0))->String() );
+    snlMinute = atoi( ((TObjString *)timeTokens->At(1))->String() );
+    snlSecond = atoi( ((TObjString *)timeTokens->At(2))->String() );
+  }
+  else{
+    snlYear = 0; snlMonth = 0; snlDay = 0;
+    snlHour = 0; snlMinute = 0; snlSecond = 0;
+  }
+}
+
+
 Bool_t acceptCycleRMS(Int_t runNum){
   if(keys.size() == 0){
     acc0OnMode = 0.0; acc0OnOffset = 0.0;
@@ -65,6 +93,35 @@ Bool_t acceptCycleDoubleDiff(){
   return TMath::Abs(diff*1.0/diffErr) < 3.0;
 }
 
+Bool_t acceptCycleBackAsym(){
+  if(backAsymTracker.size() < trackerSize){
+    backAsymTracker.push_back(asym0LasOff.mean);
+  }
+  else if(backAsymTracker.size() > trackerSize){
+    Int_t sizeDiff = backAsymTracker.size() - trackerSize;
+    for(Int_t i = 0; i < sizeDiff; i++){
+      backAsymTracker.erase(backAsymTracker.begin());
+    }
+  }
+  else{
+    backAsymTracker.erase(backAsymTracker.begin());
+    backAsymTracker.push_back(asym0LasOff.mean);
+  }
+
+  Bool_t passed = kTRUE;
+  if(backAsymTracker.size() == trackerSize){
+    Float_t backAsymAvg = 0.0;
+    for(Float_t asym : backAsymTracker){
+      backAsymAvg += asym;
+    }
+    backAsymAvg /= trackerSize;
+    
+    passed = TMath::Abs(backAsymAvg - asym0LasOff.mean) < 0.001;
+  }
+  
+  return passed;
+}
+
 Bool_t acceptCycle(Int_t runNum){
   //return acceptCycleRMS(runNum);
   Int_t rmsCut = (Int_t)acceptCycleRMS(runNum);
@@ -75,13 +132,21 @@ Bool_t acceptCycle(Int_t runNum){
   if(runNum < 4330){
     polErrCut = (Int_t)(pol0.meanErr < 0.8);
   }
-  Int_t offAsymCut = (Int_t)(TMath::Abs(asym0LasOff.mean) < 0.001656);
+  Int_t bcmAsymOnCut = (Int_t)(TMath::Abs(cycQrtData[46].mean*1.0/cycQrtData[46].meanErr)<3);
+  Int_t bcmAsymOff1Cut = (Int_t)(TMath::Abs(cycQrtData[47].mean*1.0/cycQrtData[47].meanErr)<3);
+  Int_t bcmAsymOff2Cut = (Int_t)(TMath::Abs(cycQrtData[48].mean*1.0/cycQrtData[48].meanErr)<3);
+  //Int_t backAsymCut = (Int_t)acceptCycleBackAsym();
+  Int_t backAsymCut = (Int_t)(TMath::Abs(asym0LasOff.mean) < 0.002);
   cycleCut = 0;
   cycleCut += 0x01*(Int_t)(!rmsCut);
   cycleCut += 0x02*(Int_t)(!signalSizeCut);
   cycleCut += 0x04*(Int_t)(!doubleDiffCut);
   cycleCut += 0x08*(Int_t)(!polErrCut);
   //cycleCut += 0x10*(Int_t)(!backCut);
+  cycleCut += 0x20*(Int_t)(!bcmAsymOnCut);
+  cycleCut += 0x40*(Int_t)(!bcmAsymOff1Cut);
+  cycleCut += 0x80*(Int_t)(!bcmAsymOff2Cut);
+  //cycleCut += 0x100*(Int_t)(!backAsymCut);
 
   return cycleCut == 0;
 }
@@ -199,6 +264,10 @@ void calcAsymCorr(Int_t snlNum, Int_t runNum){
   if(snlNum < 100 || snlNum == 500){
     p0 = 0.00521544;
     p1 = -0.000602352;
+    radCorr = 1.0;
+  }
+  else{
+    radCorr = 0.997;
   }
   Float_t asymDiffCorr = 0.0;
   Float_t asymDiffCorrErr = 0.0;
@@ -210,8 +279,10 @@ void calcAsymCorr(Int_t snlNum, Int_t runNum){
     }
   }
   
-  Float_t asymCorr = asym0NGC.mean - asymDiffCorr;
-  Float_t asymCorrErr = TMath::Sqrt(TMath::Power(asym0NGC.meanErr, 2) + TMath::Power(asymDiffCorrErr, 2));
+  // Float_t asymCorr = radCorr*(asym0NGC.mean - asymDiffCorr);
+  Float_t asymCorr = radCorr*asym0NGC.mean;
+  // Float_t asymCorrErr = TMath::Sqrt(TMath::Power(asym0NGC.meanErr, 2) + TMath::Power(asymDiffCorrErr, 2));
+  Float_t asymCorrErr = asym0NGC.meanErr;
   Float_t meanAcc0LasOn = cycMPSData[0].mean;
   Float_t meanAcc0LasOff = (cycMPSData[1].mean + cycMPSData[2].mean)/2.;
   alphaOn = p0 + meanAcc0LasOn*p1;
@@ -600,6 +671,12 @@ void initSnailTree(TTree *snl){
   snl->Branch("numCycles", &numSnlCycles, "numCycles/I");
   snl->Branch("numCyclesAcc", &numSnlCyclesAcc, "numCyclesAcc/I");
   snl->Branch("snailTime", &snailTime);
+  snl->Branch("year", &snlYear, "year/I");
+  snl->Branch("month", &snlMonth, "month/I");
+  snl->Branch("day", &snlDay, "day/I");
+  snl->Branch("hour", &snlHour, "hour/I");
+  snl->Branch("minute", &snlMinute, "minute/I");
+  snl->Branch("second", &snlSecond, "second/I");
   //snl->Branch("Asym0", &snlAsym0, "mean/F:meanErr/F:Chi2/F:NDF/I");
   //snl->Branch("Asym0NGC", &snlAsym0NGC, "mean/F:meanErr/F:Chi2/F:NDF/I");
   //snl->Branch("Asym0LasOn", &snlAsym0On, "mean/F:meanErr/F:Chi2/F:NDF/I");
@@ -623,7 +700,7 @@ void initSnailTree(TTree *snl){
 /**
   Called before run and cycle loops
 **/
-void snailIterSet(Int_t base, Int_t snlInd){
+void snailIterSet(Int_t base, Int_t snlInd, Int_t startRunNum){
   printf("Analyzing snail %i...\n", base + snlInd);
   snailNum = base + snlInd;
   numSnlCycles = 0;
@@ -643,6 +720,7 @@ void snailIterSet(Int_t base, Int_t snlInd){
   //snlAsym4Avg.clear(); snlAsym4Err.clear();
   //snlPol4Err.clear(); snlPol4Err.clear();
   qw1 = 0; hw1 = 0; qw2 = 0; ihwp = 0; HWienAngle = 0; VWienAngle = 0; PhiFG = 0;
+  readTimeFile(startRunNum);
 }
 
 void snailIterAfterSet(Int_t base, Int_t snlInd){
@@ -655,35 +733,11 @@ void snailIterAfterSet(Int_t base, Int_t snlInd){
     fPol0[i] = new TF1(Form("f%s_%i", polNames[i].Data(), base + snlInd), "pol0");
     fBurst[i] = new TF1(Form("fBurst%s_%i", polNames[i].Data(), base + snlInd), "pol0");
   }
-  //TH1F *hAsym0 = new TH1F(Form("hAsym0_%i", base + snlInd), "Asym0", numSnlCyclesAcc, 0, numSnlCyclesAcc);
-  //TH1F *hAsym0NGC = new TH1F(Form("hAsym0NGC_%i", base + snlInd), "Asym0 NGC", numSnlCyclesAcc, 0, numSnlCyclesAcc);
-  //TH1F *hAsym0On = new TH1F(Form("hAsym0On_%i", base + snlInd), "Asym0 On", numSnlCyclesAcc, 0, numSnlCyclesAcc);
-  //TH1F *hAsym0Off = new TH1F(Form("hAsym0Off_%i", base + snlInd), "Asym0 Off", numSnlCyclesAcc, 0, numSnlCyclesAcc);
-  //TH1F *hPol0 = new TH1F(Form("hPol0_%i", base + snlInd), "Pol0", numSnlCyclesAcc, 0, numSnlCyclesAcc);
-  //TH1F *hAsym4 = new TH1F(Form("hAsym4_%i", base + snlInd), "Asym4", numSnlCycles, 0, numSnlCycles);
-  //TH1F *hPol4 = new TH1F(Form("hPol4_%i", base + snlInd), "Pol4", numSnlCycles, 0, numSnlCycles);
-  //TF1 *fAsym0 = new TF1(Form("fAsym0_%i", base + snlInd), "pol0");
-  //TF1 *fAsym0NGC = new TF1(Form("fAsym0NGC_%i", base + snlInd), "pol0");
-  //TF1 *fAsym0On = new TF1(Form("fAsym0On_%i", base + snlInd), "pol0");
-  //TF1 *fAsym0Off = new TF1(Form("fAsym0Off_%i", base + snlInd), "pol0");
-  //TF1 *fPol0 = new TF1(Form("fPol0_%i", base + snlInd), "pol0");
-  //TF1 *fAsym4 = new TF1(Form("fAsym4_%i", base + snlInd), "pol0");
-  //TF1 *fPol4 = new TF1(Form("fPol4_%i", base + snlInd), "pol0");
+
   for(Int_t i = 0; i < snlPol0Avg.size(); i++){
     for(Int_t j = 0; j < snlPol0Avg[i].size(); j++){
       hPol0[i]->SetBinContent(j + 1, snlPol0Avg[i][j]); hPol0[i]->SetBinError(j + 1, snlPol0Err[i][j]);
       hBurst[i]->SetBinContent(j + 1, snlBurstAvg[i][j]); hBurst[i]->SetBinError(j + 1, snlBurstErr[i][j]);
-      //hAsym0->SetBinContent(i + 1, snlAsym0Avg[i]); hAsym0->SetBinError(i + 1, snlAsym0Err[i]);
-      //hAsym0NGC->SetBinContent(i + 1, snlAsym0NGCAvg[i]); hAsym0NGC->SetBinError(i + 1, snlAsym0NGCErr[i]);
-      //hAsym0On->SetBinContent(i + 1, snlAsym0OnAvg[i]); hAsym0On->SetBinError(i + 1, snlAsym0OnErr[i]);
-      //hAsym0Off->SetBinContent(i + 1, snlAsym0OffAvg[i]); hAsym0Off->SetBinError(i + 1, snlAsym0OffErr[i]);
-      //hPol0->SetBinContent(i + 1, snlPol0Avg[i]); hPol0->SetBinError(i + 1, snlPol0Err[i]);
-      //hAsym4->SetBinContent(i + 1, snlAsym4Avg[i]); hAsym4->SetBinError(i + 1, snlAsym4Err[i]);
-      //hPol4->SetBinContent(i + 1, snlPol4Avg[i]); hPol4->SetBinError(i + 1, snlPol4Err[i]);
-      //printf("  Asyms, Cycle %i: %f +/- %f, %f +/- %f\n", i + 1, snlAsym0Avg[i], snlAsym0Err[i], snlAsym4Avg[i], snlAsym4Err[i]);
-      //printf("  Pol, Cycle %i: %f +/- %f, %f +/- %f\n", i + 1, snlPol0Avg[i], snlPol0Err[i], snlPol4Avg[i], snlPol4Err[i]);
-      //printf("  Asyms, Cycle %i: %f +/- %f\n", i + 1, snlAsym0Avg[i], snlAsym0Err[i]);
-      //printf("  Pol, Cycle %i: %f +/- %f\n", i + 1, snlPol0Avg[i], snlPol0Err[i]);
     }
   }
   for(Int_t i = 0; i < nPolVars; i++){
@@ -698,27 +752,6 @@ void snailIterAfterSet(Int_t base, Int_t snlInd){
     snlBurst[i].Chi2 = fBurst[i]->GetChisquare();
     snlBurst[i].NDF = fBurst[i]->GetNDF();
   }
-  //hAsym0->Fit(fAsym0, "Q", "", 0, numSnlCyclesAcc);
-  //hAsym0NGC->Fit(fAsym0NGC, "Q", "", 0, numSnlCyclesAcc);
-  //hAsym0On->Fit(fAsym0On, "Q", "", 0, numSnlCyclesAcc);
-  //hAsym0Off->Fit(fAsym0Off, "Q", "", 0, numSnlCyclesAcc);
-  //hPol0->Fit(fPol0, "Q", "", 0, numSnlCyclesAcc);
-  //snlAsym0.mean = fAsym0->GetParameter(0); snlAsym0.meanErr = fAsym0->GetParError(0);
-  //snlAsym0.Chi2 = fAsym0->GetChisquare(); snlAsym0.NDF = fAsym0->GetNDF();
-  //snlAsym0NGC.mean = fAsym0NGC->GetParameter(0); snlAsym0NGC.meanErr = fAsym0NGC->GetParError(0);
-  //snlAsym0NGC.Chi2 = fAsym0NGC->GetChisquare(); snlAsym0NGC.NDF = fAsym0NGC->GetNDF();
-  //snlAsym0On.mean = fAsym0On->GetParameter(0); snlAsym0On.meanErr = fAsym0On->GetParError(0);
-  //snlAsym0On.Chi2 = fAsym0On->GetChisquare(); snlAsym0On.NDF = fAsym0On->GetNDF();
-  //snlAsym0Off.mean = fAsym0Off->GetParameter(0); snlAsym0Off.meanErr = fAsym0Off->GetParError(0);
-  //snlAsym0Off.Chi2 = fAsym0Off->GetChisquare(); snlAsym0Off.NDF = fAsym0Off->GetNDF();
-  //snlPol0.mean = fPol0->GetParameter(0); snlPol0.meanErr = fPol0->GetParError(0);
-  //snlPol0.Chi2 = fPol0->GetChisquare(); snlPol0.NDF = fPol0->GetNDF();
-  //hAsym4->Fit(fAsym4, "Q", "", 0, numSnlCycles);
-  //hPol4->Fit(fPol4, "Q", "", 0, numSnlCycles);
-  //snlAsym4.mean = fAsym4->GetParameter(0); snlAsym4.meanErr = fAsym4->GetParError(0);
-  //snlAsym4.Chi2 = fAsym4->GetChisquare(); snlAsym4.NDF = fAsym4->GetNDF();
-  //snlPol4.mean = fPol4->GetParameter(0); snlPol4.meanErr = fPol4->GetParError(0);
-  //snlPol4.Chi2 = fPol4->GetChisquare(); snlPol4.NDF = fPol4->GetNDF();
 
   //printf("Sign Vars snail %i: IHWP %f, VWien: %f, HWien: %f, PhiFG: %f; Num Runs: %i\n", base + snlInd, ihwp, VWienAngle, HWienAngle, PhiFG, numSnlRuns);
 
@@ -789,50 +822,21 @@ void runIterAfterSet(Int_t runNumber){
   TH1F *hPol0[nPolVars]; TF1 *fPol0[nPolVars];
   TH1F *hBurst[nPolVars]; TF1 *fBurst[nPolVars];
   numRunCyclesAcc = numCyclesAcc;
-  //TH1F *hAsym0 = new TH1F(Form("hAsym0_%i", runNumber), "Asym0", numRunCyclesAcc, 0, numRunCyclesAcc);
-  //TH1F *hAsym0NGC = new TH1F(Form("hAsym0NGC_%i", runNumber), "Asym0 NGC", numRunCyclesAcc, 0, numRunCyclesAcc);
-  //TH1F *hAsym0On = new TH1F(Form("hAsym0On_%i", runNumber), "Asym0 On", numRunCyclesAcc, 0, numRunCyclesAcc);
-  //TH1F *hAsym0Off = new TH1F(Form("hAsym0Off_%i", runNumber), "Asym0 Off", numRunCyclesAcc, 0, numRunCyclesAcc);
-  //TH1F *hPol0 = new TH1F(Form("hPol0_%i", runNumber), "Pol0", numRunCyclesAcc, 0, numRunCyclesAcc);
-  //TF1 *fAsym0 = new TF1(Form("fAsym0_%i", runNumber), "pol0");
-  //TF1 *fAsym0NGC = new TF1(Form("fAsym0NGC_%i", runNumber), "pol0");
-  //TF1 *fAsym0On = new TF1(Form("fAsym0On_%i", runNumber), "pol0");
-  //TF1 *fAsym0Off = new TF1(Form("fAsym0Off_%i", runNumber), "pol0");
-  //TF1 *fPol0 = new TF1(Form("fPol0_%i", runNumber), "pol0");
+
   for(Int_t i = 0; i < nPolVars; i++){
     hPol0[i] = new TH1F(Form("h%s_%i", polNames[i].Data(), runNumber), polTitles[i].Data(), numRunCyclesAcc, 0, numRunCyclesAcc);
     fPol0[i] = new TF1(Form("f%s_%i", polNames[i].Data(), runNumber), "pol0");
     hBurst[i] = new TH1F(Form("hBurst%s_%i", polNames[i].Data(), runNumber), Form("Burst %s", polTitles[i].Data()), numRunCyclesAcc, 0, numRunCyclesAcc);
     fBurst[i] = new TF1(Form("fBurst%s_%i", polNames[i].Data(), runNumber), "pol0");
   }
-  //for(Int_t i = 0; i < runAsym0Avg.size(); i++){
-  //  hAsym0->SetBinContent(i + 1, runAsym0Avg[i]); hAsym0->SetBinError(i + 1, runAsym0Err[i]);
-  //  hAsym0NGC->SetBinContent(i + 1, runAsym0NGCAvg[i]); hAsym0NGC->SetBinError(i + 1, runAsym0NGCErr[i]);
-  //  hAsym0On->SetBinContent(i + 1, runAsym0OnAvg[i]); hAsym0On->SetBinError(i + 1, runAsym0OnErr[i]);
-  //  hAsym0Off->SetBinContent(i + 1, runAsym0OffAvg[i]); hAsym0Off->SetBinError(i + 1, runAsym0OffErr[i]);
-  //  hPol0->SetBinContent(i + 1, runPol0Avg[i]); hPol0->SetBinError(i + 1, runPol0Err[i]);
-  //}
+
   for(Int_t i = 0; i < nPolVars; i++){
     for(Int_t j = 0; j < runPol0Avg[i].size(); j++){
       hPol0[i]->SetBinContent(j + 1, runPol0Avg[i][j]); hPol0[i]->SetBinError(j + 1, runPol0Err[i][j]);
       hBurst[i]->SetBinContent(j + 1, runBurstAvg[i][j]); hBurst[i]->SetBinError(j + 1, runBurstErr[i][j]);
     }
   }
-  //hAsym0->Fit(fAsym0, "Q", "", 0, numRunCyclesAcc);
-  //hAsym0NGC->Fit(fAsym0NGC, "Q", "", 0, numRunCyclesAcc);
-  //hAsym0On->Fit(fAsym0On, "Q", "", 0, numRunCyclesAcc);
-  //hAsym0Off->Fit(fAsym0Off, "Q", "", 0, numRunCyclesAcc);
-  //hPol0->Fit(fPol0, "Q", "", 0, numRunCyclesAcc);
-  //runAsym0.mean = fAsym0->GetParameter(0); runAsym0.meanErr = fAsym0->GetParError(0);
-  //runAsym0.Chi2 = fAsym0->GetChisquare(); runAsym0.NDF = fAsym0->GetNDF();
-  //runAsym0NGC.mean = fAsym0NGC->GetParameter(0); runAsym0NGC.meanErr = fAsym0NGC->GetParError(0);
-  //runAsym0NGC.Chi2 = fAsym0NGC->GetChisquare(); runAsym0NGC.NDF = fAsym0NGC->GetNDF();
-  //runAsym0On.mean = fAsym0On->GetParameter(0); runAsym0On.meanErr = fAsym0On->GetParError(0);
-  //runAsym0On.Chi2 = fAsym0On->GetChisquare(); runAsym0On.NDF = fAsym0On->GetNDF();
-  //runAsym0Off.mean = fAsym0Off->GetParameter(0); runAsym0Off.meanErr = fAsym0Off->GetParError(0);
-  //runAsym0Off.Chi2 = fAsym0Off->GetChisquare(); runAsym0Off.NDF = fAsym0Off->GetNDF();
-  //runPol0.mean = fPol0->GetParameter(0); runPol0.meanErr = fPol0->GetParError(0);
-  //runPol0.Chi2 = fPol0->GetChisquare(); runPol0.NDF = fPol0->GetNDF();
+
   for(Int_t i = 0; i < nPolVars; i++){
     hPol0[i]->Fit(fPol0[i], "Q", "", 0, numRunCyclesAcc);
     hBurst[i]->Fit(fBurst[i], "Q", "", 0, numRunCyclesAcc);
@@ -943,7 +947,7 @@ void buildGrandRootfile(Int_t prexOrCrex){
   Int_t base = 100*(prexOrCrex - 1) + 1;
   for(Int_t s = 0; s < runList.size(); s++){
     //if(s < 29 || s > 39) continue;
-    snailIterSet(base, s);
+    snailIterSet(base, s, runList[s][0]);
     for(Int_t r = 0; r < runList[s].size(); r++){
       TFile *plotFile = new TFile(Form("%s/Run%i_Plots.root", getenv("COMPMON_RUNPLOTS"), runList[s][r]), "READ");
       vector<vector<int>> cycles = findCycles(runList[s][r]);

@@ -121,29 +121,31 @@ int helicityTracker::newHelicityWindow(int currentBit,int helicitySetSynchBit,
     if(helicityStructure==8&&statusHW->countHWs>8){
       tmp=helBitHistory& 0xFF;  //look at lower 8 bits of inut bit history
       if(tmp==0xaa || tmp==0x66) {
-	//OctetA to Octet A transition or OctetB to OctetB transition
-	patternIndex=2;  //halfway into an octet
-	helicitySetTransitionFound=true;
-	printf("Synched to octet sets at Helicity Window %d \n",
+	      //OctetA to Octet A transition or OctetB to OctetB transition
+	      patternIndex=2;  //halfway into an octet
+	      helicitySetTransitionFound=true;
+  	    printf("Synched to octet sets at Helicity Window %d \n",
 	       statusHW->countHWs);
       }
-    }else if(helicityStructure==4&&statusHW->countHWs>4){
+    }
+    else if(helicityStructure==4&&statusHW->countHWs>4){
       tmp=helBitHistory& 0xF;  //look at lower 4 bits of history
       if(tmp==0xa || tmp==0x5) {
-	//QuadA to Quad A transition or QuadB to QuadB transition
-	patternIndex=0;  //end of a quad
-	helicitySetTransitionFound=true;
-	printf("Synched to quartet sets at Helicity Window %d pattern 0x%8x\n",
-	       statusHW->countHWs,helBitHistory);
+	      //QuadA to Quad A transition or QuadB to QuadB transition
+	      patternIndex=0;  //end of a quad
+	      helicitySetTransitionFound=true;
+	      printf("Synched to quartet sets at Helicity Window %d pattern 0x%8x\n",
+	      statusHW->countHWs,helBitHistory);
       }
-    }else if(helicityStructure==2&&statusHW->countHWs>2){
+    }
+    else if(helicityStructure==2&&statusHW->countHWs>2){
       tmp=helBitHistory& 0x3;  //look at lower 2 bits of history
       if(tmp==0x0 || tmp==0x3) {
-	//PairA to PairA transition or PairB to PairB transition
-	patternIndex=1;  //halfway into an pair
-	helicitySetTransitionFound=true;
-	printf("Synched to pair sets at Helicity Window %d \n",
-	       statusHW->countHWs);
+	      //PairA to PairA transition or PairB to PairB transition
+	      patternIndex=1;  //halfway into an pair
+	      helicitySetTransitionFound=true;
+	      printf("Synched to pair sets at Helicity Window %d \n",
+	      statusHW->countHWs);
       }
     }
     statusHW->helicitySynchValid=false;//begining of a helicity set not yet found
@@ -156,9 +158,10 @@ int helicityTracker::newHelicityWindow(int currentBit,int helicitySetSynchBit,
       statusHW->helicitySynchValid=true;   //found start of a helicity set
       validPredictionRegister=newHelicitySet(currentBit);  //update for start of next set
       if(validPredictionRegister){
-	statusHW->helicityPredictionValid=true;
-      }else{
-	statusHW->helicityPredictionValid=false;
+	      statusHW->helicityPredictionValid=true;
+      }
+      else{
+	      statusHW->helicityPredictionValid=false;
       }
     }
   }
@@ -166,7 +169,8 @@ int helicityTracker::newHelicityWindow(int currentBit,int helicitySetSynchBit,
   // now wrap up bookeeping for each new helicity window
   if(statusHW->helicitySynchValid){
     statusHW->countSynchedHWs++;
-  }else{
+  }
+  else{
     statusHW->countSynchedHWs=-1;
   }
 

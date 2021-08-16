@@ -7,6 +7,8 @@ run_num=-1
 max_evt=0
 replay=0
 do_grand=1
+do_cycles=1
+do_cycleCut=1
 DATE="`date +%F`"
 TIME="`date +%T`"
 
@@ -19,12 +21,14 @@ print_help () {
   echo "Required Arguments:"
   echo "    -r, --run: Specify run number to analyze"
   echo "Optional Arguments:"
-  echo "    --maxevent <number>: Specify a maximum event number to analyze up to"
-  echo "    --panguin: Enable panguin window"
-  echo "    --nowebupload: Don't generate webpage PDFs"
-  echo "    --rootfile: Don't delete the plotfile generated at the end of the script"
-  echo "    --replay: Force a compmon re-analysis of the run"
   echo "    -h, --help: Print this help message"
+  echo "    --maxevent <number>: Specify a maximum event number to analyze up to"
+  echo "    --nocycles: Don't recalculate laser cycles and bursts"
+  echo "    --nogrand: Don't generate any grand or run rootfiles."
+  echo "    --nowebupload: Don't generate webpage PDFs"
+  echo "    --panguin: Enable panguin window"
+  echo "    --replay: Force a compmon re-analysis of the run"
+  echo "    --rootfile: Don't delete the plotfile generated at the end of the script"
 }
 
 while (( "$#" )); do
@@ -51,6 +55,14 @@ while (( "$#" )); do
       ;;
     --nogrand)
       do_grand=0
+      shift 1
+      ;;
+    --nocycles)
+      do_cycles=0
+      shift 1
+      ;;
+    --nocyclecut)
+      do_cycleCut=0
       shift 1
       ;;
     -h|--help)
@@ -101,8 +113,10 @@ if [ ! -f $COMP_ROOTFILES/compmon_$run_num.root ]; then
   exit 1;
 fi
 
-root -l -b -q $COMPMON_LASERCYCLES/laserCycles.C\($run_num\)
-root -l -b -q $COMPMON_LASERCYCLES/bursts.C\($run_num,300\)
+if [ $do_cycles == 1 ]; then
+  root -l -b -q $COMPMON_LASERCYCLES/laserCycles.C\($run_num\)
+  root -l -b -q $COMPMON_LASERCYCLES/bursts.C\($run_num,300\)
+fi
 
 if [ $max_evt -gt 0 ]; then
   root -q -b -l $COMPMON_ONLINE/dataQualityCheck.C\($run_num,$max_evt\)
@@ -125,6 +139,10 @@ fi
 if [ $do_grand -eq 1 ]; then
   python3 $COMPMON_ONLINE/write_position_file.py $run_num
   $COMPMON_GRAND/runPlots.sh $run_num
+fi
+
+if [ $do_cycleCut -eq 1 ]; then
+  root -l -b -q $COMPMON_ONLINE/cycleCutOnlinePlots.C\($run_num\)
 fi
 
 #rm -f $COMPMON_DIR/core.*

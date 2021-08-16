@@ -70,22 +70,22 @@ void adjustMinMaxs(vector<Float_t> ymins, vector<Float_t> ymaxs, Float_t val, In
   if(val > ymaxs[msmt]){ymaxs[msmt] = val;}
 }
 
-Bool_t isCloseTo(Float_t num, Float_t ref){
+Bool_t isCloseToAlt(Float_t num, Float_t ref){
   Bool_t val = TMath::Abs(num)>=0.99*TMath::Abs(ref) && TMath::Abs(num)<=1.01*TMath::Abs(ref);
   return val;
 }
 
 Bool_t isFlipLeft(Int_t num, Float_t HWienAngle, Float_t VWienAngle, Float_t PhiFG, Bool_t isSnail=true){
   if((num < 99 && isSnail) || (num < 4900 && !isSnail)){
-    if(isCloseTo(HWienAngle, -13.0) && isCloseTo(VWienAngle, -89.9008) && isCloseTo(PhiFG, 86.9014))
+    if(isCloseToAlt(HWienAngle, -13.0) && isCloseToAlt(VWienAngle, -89.9008) && isCloseToAlt(PhiFG, 86.9014))
       return true;
-    else if(isCloseTo(HWienAngle, -13.0) && isCloseTo(VWienAngle, 88.0008) && isCloseTo(PhiFG, 91.1902))
+    else if(isCloseToAlt(HWienAngle, -13.0) && isCloseToAlt(VWienAngle, 88.0008) && isCloseToAlt(PhiFG, 91.1902))
       return false;
   }
   else{
-    if(isCloseTo(HWienAngle, -29.6402) && isCloseTo(VWienAngle, -90.5996) && isCloseTo(PhiFG, 88.0277))
+    if(isCloseToAlt(HWienAngle, -29.6402) && isCloseToAlt(VWienAngle, -90.5996) && isCloseToAlt(PhiFG, 88.0277))
       return true;
-    else if(isCloseTo(HWienAngle, -29.6402) && isCloseTo(VWienAngle, 88.0008) && isCloseTo(PhiFG, 89.9558))
+    else if(isCloseToAlt(HWienAngle, -29.6402) && isCloseToAlt(VWienAngle, 88.0008) && isCloseToAlt(PhiFG, 89.9558))
       return false;
   }
   return false;
@@ -194,7 +194,7 @@ void plotPolSnl(TString fname, TString msmt, Int_t msmtNum, Float_t smallFac, Fl
 
   for(Int_t i = 0; i < tree->GetEntries(); i++){
     tree->GetEntry(i);
-    if(sign == 0 || snailNum == 150 || snailNum == 151 || snailNum == 159 || snailNum == 160 || snailNum == 221) continue;
+    if(sign == 0) continue;
     Int_t ind = getGraphInd(snailNum, hWien, vWien, solWien, ihwp, true);
     Float_t polVar = factor*var.mean; Float_t polErr = factor*var.meanErr;
     if(signCorr){polVar = factor*var.mean*sign;}

@@ -448,7 +448,7 @@ void breakdown_plots(TChain* somethingwise, int run_num, TFile* outfile, TString
   
   TString states[2] = {"ON", "OFF"}; TString hels[2] = {"Neg", "Pos"};
   TString laserON("(laserState==0 || laserState == 1)"); TString laserOFF("(laserState==2 || laserState==3)");
-  TString beamON("beamState==1"); TString beamOFF("beamState==0");
+  TString beamON = Form("beamState==1 && %s", getCycleCuts(run_num).Data()); TString beamOFF("beamState==0");
   TString hel0("helicityStateReported==0"); TString hel1("helicityStateReported==1");
   TString laserCuts[2] = {laserON, laserOFF}; TString beamCuts[2] = {beamON, beamOFF}; TString helCuts[2] = {hel0, hel1};
   TString extraCuts(Form("mpsCoda<%i", max_event));
@@ -490,6 +490,7 @@ void mps_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString tree
   TString ytitles[7] = {"Acc0/NAcc0", "BCM", "Cav Power", "BPM Ax", "BPM Ay", "BPM Bx", "BPM By"};
 
   //Initialize Acc0, BPM, BCM plots y_vals[msmt_id][config]
+  vector<vector<int>> runCycles = getCycleList(run_num);
   vector<vector<Float_t>> mpsCoda_vals; vector<vector<vector<Float_t>>> y_vals;
   for(int i = 0; i < 7; i++){
     vector<vector<Float_t>> real_vals;
@@ -515,12 +516,11 @@ void mps_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString tree
 
   for(int i = 0; i < somethingwise->GetEntries(); i++){
     somethingwise->GetEntry(i);
-    if(mpsCoda > max_event){continue;}
-    Int_t laserInd = 0;
-    Int_t beamInd = ((Int_t)!beamState)*4;
+    if(mpsCoda > max_event || beamState == 2 || laserState == 4){continue;}
+    Int_t laserInd = (laserState == 0 || laserState == 1) ? 0 : 2;
+    Int_t beamInd = beamState == 1 ? 0 : 4;
+    if(beamState == 1 && !mpsInCycle(runCycles, mpsCoda)){continue;}
     //if(beamState == 2) beamInd = 4;
-    if(beamState == 2) continue;
-    if(laserState==2 || laserState==3){laserInd = 2;}
     mpsCoda_vals[beamInd + laserInd + helicityStateReported].push_back(i);
     if(mpsCoda < xmin){xmin = i;}
     if(mpsCoda > xmax){xmax = i;}
@@ -529,9 +529,6 @@ void mps_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString tree
       y_vals[j][beamInd + laserInd + helicityStateReported].push_back(all_vals[j]);
       if(all_vals[j] < ymins[j]){ymins[j] = all_vals[j];}
       if(all_vals[j] > ymaxs[j]){ymaxs[j] = all_vals[j];}
-    }
-    if(beamState == 1){
-
     }
   }
 
@@ -552,7 +549,7 @@ void quartet_plots(TChain* somethingwise, int run_num, TFile* outfile, int max_e
   
   TString states[2] = {"ON", "OFF"};
   TString laserON("(laserState==0 || laserState == 1)"); TString laserOFF("(laserState==2 || laserState==3)");
-  TString beamON("beamState==1"); TString beamOFF("beamState==0");
+  TString beamON = Form("beamState==1 && %s", getCycleCuts(run_num).Data()); TString beamOFF("beamState==0");
   TString laserCuts[2] = {laserON, laserOFF}; TString beamCuts[2] = {beamON, beamOFF};
   TString extraCuts(Form("firstMPSnumber < %i", max_event));
 
@@ -624,6 +621,7 @@ void quartet_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString 
   TString msmts[20] = {"posH0", "negH0", "diff0", "summ0", "asym0", "bcm", "posH4", "negH4", "diff4", "summ4", "asym4",
                        "USbg1", "USbg2", "DSbg1", "DSbg2", "vertFing", "horizFing", "cavPow", "asym0sub", "asym4sub"};
 
+  vector<vector<int>> runCycles = getCycleList(run_num);
   vector<vector<vector<Float_t>>> x_vals; vector<vector<vector<Float_t>>> y_vals;
   for(int i = 0; i < n_msmts; i++){
     vector<vector<Float_t>> x; vector<vector<Float_t>> y;
@@ -670,9 +668,10 @@ void quartet_graphs(TChain* somethingwise, int run_num, TFile* outfile, TString 
                         -1e16, -1e16, -1e16, -1e16, -1e16, -1e16, -1e16, -1e16};
   for(int i = 0; i < somethingwise->GetEntries(); i++){
     somethingwise->GetEntry(i);
-    if(firstMPSnumber > max_event){continue;}
+    if(firstMPSnumber > max_event || beamState==2 || laserState==4){continue;}
     Int_t laserInd = (Int_t)(laserState==0 || laserState==1);
     Int_t beamInd  = (Int_t)(beamState==1);
+    if(beamState == 1 && !mpsInCycle(runCycles, firstMPSnumber)){continue;}
     Double_t msmt[18] = {posAcc/posSamp, negAcc/negSamp, posAcc/posSamp - negAcc/negSamp, posAcc/posSamp + negAcc/negSamp, 
                         1000*(posAcc/posSamp - negAcc/negSamp)/(posAcc/posSamp + negAcc/negSamp), (posBCM + negBCM)/2.0, 
                          posAcc4, negAcc4, posAcc4 - negAcc4, posAcc4 + negAcc4, 1000*(posAcc4 - negAcc4)/(posAcc4 + negAcc4),
@@ -742,18 +741,7 @@ void dataQualityCheck(int run_num, int max_evt=1e9){
   //TString fname = Form("%s/compmon_%i.root", rootfiles_path.Data(), run_num);
   TString outname = Form("%s/compton_online_run_%i.root", compmon_out_path.Data(), run_num);
   TString textOutName = Form("%s/Run%i_time.txt", getenv("COMPMON_RUNPLOTS"), run_num);
-  //TChain *snapshots = new TChain("snapshots");
-  //TChain *triggerwise = new TChain("triggerwise");
-  //TChain *mpswise = new TChain("mpswise");
-  //TChain *quartetwise = new TChain("quartetwise");
-  //TChain *epicswise = new TChain("epicswise");
-  //TChain *runwise = new TChain("runwise");
-  //snapshots->Add(fname.Data());
-  //triggerwise->Add(fname.Data());
-  //mpswise->Add(fname.Data());
-  //quartetwise->Add(fname.Data());
-  //epicswise->Add(fname.Data());
-  //runwise->Add(fname.Data());
+
   Int_t mpswise = 0; Int_t quartetwise = 1;
   Int_t pulserwise = 2; Int_t triggerwise = 3;
   Int_t epicswise = 4; Int_t runwise = 5;
