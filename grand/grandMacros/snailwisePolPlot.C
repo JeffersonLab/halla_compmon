@@ -1,12 +1,5 @@
-#include "TCanvas.h"
-#include "TFile.h"
-#include "TTree.h"
-#include "TH1F.h"
-#include "TString.h"
-#include "TMath.h"
-#include "TF1.h"
-#include "../buildGrandRootfile.h"
-#include "makePlots.h"
+#include "../grandConstruction/buildGrandRootfile.h"
+#include "../grandOnline/makePlots.h"
 
 #include <vector>
 #include <string>
@@ -17,7 +10,7 @@ using namespace std;
 
 void snailwisePolPlot(Int_t prexOrCrex){
   TString expt = experimentCode(prexOrCrex);
-  TFile *grand = new TFile(Form("%s/%sGrandCompton.root", getenv("COMPMON_GRAND"), expt.Data()), "READ");
+  TFile *grand = new TFile(Form("%s/aggregates/%sGrandCompton.root", getenv("COMPMON_WEB"), expt.Data()), "READ");
   TTree *snl = (TTree *)grand->Get("snl");
 
   //TCanvas *c = new TCanvas("c", "Pol Canvas", 1500, 800);

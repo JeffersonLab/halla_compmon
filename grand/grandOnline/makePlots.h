@@ -45,7 +45,7 @@ Int_t getMarkerStyle(Int_t index){
 
 Int_t getColor(Int_t index){
   if(index == 0){return kViolet;}
-  else if(index == 1){return kOrange;}
+  else if(index == 1){return kOrange-3;}
   else if(index == 2){return kRed;}
   else if(index == 3){return kBlue;}
   else{
@@ -168,7 +168,7 @@ void plotPolSnl(TString fname, TString msmt, Int_t msmtNum, Float_t smallFac, Fl
   TString chiID(""); TString signID("");
   if(chi2) chiID = "chi2";
   if(signCorr) signID = "sign";
-  TCanvas *can = new TCanvas(Form("can%s%s_%s", signID.Data(), chiID.Data(), msmt.Data()), "Some Title", 1200, 400);
+  TCanvas *can = new TCanvas(Form("can%s%s_%s", signID.Data(), chiID.Data(), msmt.Data()), "Some Title", 1200, 800);
   TString titleAdd("");
   if(signCorr) titleAdd = " (Sign Corrected)";
   TString chiAdd("");

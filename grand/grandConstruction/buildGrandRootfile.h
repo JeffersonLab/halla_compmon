@@ -87,7 +87,8 @@ vector<vector<Float_t>> runPol0Avg, runPol0Err;
 vector<vector<Float_t>> runBurstAvg, runBurstErr;
 vector<FitPolVar> runPol0, runBurst;
 Float_t runQW1, runHW1, runQW2, runIHWP, runVWienAngle, runHWienAngle, runPhiFG;
-PolVar runLaserPol;
+Int_t runYear, runMonth, runDay, runHour, runMinute, runSecond;
+PolVar runLaserPol, runXProj, runYProj, runCollOffset, runAnPow;
 
 // snl tree
 // basics
@@ -200,6 +201,11 @@ void calcCollOffset(Int_t sNum, Int_t rNum){
   Float_t xProjErr = TMath::Sqrt(TMath::Power(bpms[0][1], 2) + TMath::Power(xDiffErr, 2));
   Float_t yProjErr = TMath::Sqrt(TMath::Power(bpms[1][1], 2) + TMath::Power(yDiffErr, 2));
 
+  runXProj.mean = collPosX;
+  runXProj.meanErr = xProjErr;
+  runYProj.mean = collPosY;
+  runYProj.meanErr = yProjErr;
+
   Float_t collOffX = collPosX - collCentX;
   Float_t collOffY = collPosY - collCentY;
   Float_t collOffXErr = TMath::Sqrt(TMath::Power(xProjErr, 2) + TMath::Power(collCentXErr, 2));
@@ -210,6 +216,9 @@ void calcCollOffset(Int_t sNum, Int_t rNum){
   Float_t offYsqErr = TMath::Abs(TMath::Power(collOffY, 2))*2*collOffYErr/collOffY;
   Float_t offSqSumErr = TMath::Sqrt(TMath::Power(offXsqErr, 2) + TMath::Power(offYsqErr, 2));
   collOffset.meanErr = TMath::Abs(collOffset.mean)*0.5*offSqSumErr/(TMath::Power(collOffX, 2) + TMath::Power(collOffY, 2));
+
+  runCollOffset.mean = collOffset.mean;
+  runCollOffset.meanErr = collOffset.meanErr;
 }
 
 void prexAnPow(Int_t sNum){
@@ -228,6 +237,8 @@ void prexAnPow(Int_t sNum){
   //anPow.meanErr = TMath::Sqrt(TMath::Power(p0Err, 2) + TMath::Power(t1Err, 2) + TMath::Power(t2Err, 2));
   //anPow.mean = 0.01655915;
   anPow.meanErr = anPowRatio*0.0;
+  runAnPow.mean = anPowRatio*(p0 + t1 + t2);
+  runAnPow.meanErr = 0.0;
 }
 
 void crexAnPow(Int_t sNum){
@@ -248,6 +259,8 @@ void crexAnPow(Int_t sNum){
   //anPow.meanErr = TMath::Sqrt(TMath::Power(p0Err, 2) + TMath::Power(t1Err, 2) + TMath::Power(t2Err, 2));
   //anPow.mean = 0.01655915;
   anPow.meanErr = anPowRatio*0.0;
+  runAnPow.mean = anPowRatio*p0;
+  runAnPow.meanErr = 0.0;
 }
 
 /**

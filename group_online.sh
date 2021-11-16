@@ -13,6 +13,6 @@ end=$(( $1 + $add ))
 for ((run = $1; run <= $end; run++)); do
   if [[ ! "${exclude_list[@]}" =~ "${run}" ]];
   then
-    ./online.sh -r $run --nowebupload --nocycles --nogrand &
+    ./online.sh -r $run --nowebupload --nocycles --nocyclecut &
   fi
 done

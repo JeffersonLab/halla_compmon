@@ -115,6 +115,9 @@ TString getCycleCuts(Int_t runNum, Int_t mode=0){
       cycleCuts += Form(" || (%s>=%i && %s<=%i)", var.Data(), cycles[i][0], var.Data(), cycles[i][5]);
   }
   cycleCuts += ")";
+  if(cycles.size() == 0){
+    return "(1)";
+  }
   return cycleCuts;
 }
 

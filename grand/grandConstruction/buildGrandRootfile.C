@@ -40,7 +40,7 @@ void readCorrsFile(TString expt){
 }
 
 
-void readTimeFile(Int_t runNum){
+void readTimeFile(Int_t runNum, Bool_t snlMode=kFALSE){
   
   ifstream timefile(Form("%s/Run%i_time.txt", getenv("COMPMON_RUNPLOTS"), runNum));
   if(timefile.is_open()){
@@ -53,16 +53,32 @@ void readTimeFile(Int_t runNum){
     TObjArray *dateTokens = dateString.Tokenize("-");
     TObjArray *timeTokens = timeString.Tokenize(":");
 
-    snlYear   = atoi( ((TObjString *)dateTokens->At(0))->String() );
-    snlMonth  = atoi( ((TObjString *)dateTokens->At(1))->String() );
-    snlDay    = atoi( ((TObjString *)dateTokens->At(2))->String() );
-    snlHour   = atoi( ((TObjString *)timeTokens->At(0))->String() );
-    snlMinute = atoi( ((TObjString *)timeTokens->At(1))->String() );
-    snlSecond = atoi( ((TObjString *)timeTokens->At(2))->String() );
+    if(snlMode){
+      snlYear   = atoi( ((TObjString *)dateTokens->At(0))->String() );
+      snlMonth  = atoi( ((TObjString *)dateTokens->At(1))->String() );
+      snlDay    = atoi( ((TObjString *)dateTokens->At(2))->String() );
+      snlHour   = atoi( ((TObjString *)timeTokens->At(0))->String() );
+      snlMinute = atoi( ((TObjString *)timeTokens->At(1))->String() );
+      snlSecond = atoi( ((TObjString *)timeTokens->At(2))->String() );
+    }
+    else{
+      runYear   = atoi( ((TObjString *)dateTokens->At(0))->String() );
+      runMonth  = atoi( ((TObjString *)dateTokens->At(1))->String() );
+      runDay    = atoi( ((TObjString *)dateTokens->At(2))->String() );
+      runHour   = atoi( ((TObjString *)timeTokens->At(0))->String() );
+      runMinute = atoi( ((TObjString *)timeTokens->At(1))->String() );
+      runSecond = atoi( ((TObjString *)timeTokens->At(2))->String() );
+    }
   }
   else{
-    snlYear = 0; snlMonth = 0; snlDay = 0;
-    snlHour = 0; snlMinute = 0; snlSecond = 0;
+    if(snlMode){
+      snlYear = 0; snlMonth = 0; snlDay = 0;
+      snlHour = 0; snlMinute = 0; snlSecond = 0;
+    }
+    else{
+      runYear = 0; runMonth = 0; runDay = 0;
+      runHour = 0; runMinute = 0; runSecond = 0;
+    }
   }
 }
 
@@ -128,21 +144,24 @@ Bool_t acceptCycle(Int_t runNum){
   Int_t signalSizeCut = (Int_t)(cycMPSData[0].mean - (cycMPSData[1].mean + cycMPSData[2].mean)/2.0 > 0.7);
   Int_t doubleDiffCut = (Int_t)acceptCycleDoubleDiff();
   Int_t polErrCut = (Int_t)(pol0.meanErr < 0.3);
-  Int_t backCut = (Int_t)(cycMPSData[16].mean < 0.8 && cycMPSData[17].mean < 2.8);
   if(runNum < 4330){
     polErrCut = (Int_t)(pol0.meanErr < 0.8);
+  }
+  Int_t backCut = (Int_t)(cycMPSData[16].mean < 0.8 && cycMPSData[17].mean < 2.8);
+  if(runNum >= 4800 && runNum <= 6280){
+    backCut = (Int_t)(cycMPSData[16].mean < 1e6 && cycMPSData[17].mean < 1e6);
   }
   Int_t bcmAsymOnCut = (Int_t)(TMath::Abs(cycQrtData[46].mean*1.0/cycQrtData[46].meanErr)<3);
   Int_t bcmAsymOff1Cut = (Int_t)(TMath::Abs(cycQrtData[47].mean*1.0/cycQrtData[47].meanErr)<3);
   Int_t bcmAsymOff2Cut = (Int_t)(TMath::Abs(cycQrtData[48].mean*1.0/cycQrtData[48].meanErr)<3);
   //Int_t backAsymCut = (Int_t)acceptCycleBackAsym();
-  Int_t backAsymCut = (Int_t)(TMath::Abs(asym0LasOff.mean) < 0.002);
+  Int_t backAsymCut = (Int_t)(TMath::Abs(asym0LasOff.mean) < 0.006);
   cycleCut = 0;
   cycleCut += 0x01*(Int_t)(!rmsCut);
   cycleCut += 0x02*(Int_t)(!signalSizeCut);
   cycleCut += 0x04*(Int_t)(!doubleDiffCut);
   cycleCut += 0x08*(Int_t)(!polErrCut);
-  //cycleCut += 0x10*(Int_t)(!backCut);
+  cycleCut += 0x10*(Int_t)(!backCut);
   cycleCut += 0x20*(Int_t)(!bcmAsymOnCut);
   cycleCut += 0x40*(Int_t)(!bcmAsymOff1Cut);
   cycleCut += 0x80*(Int_t)(!bcmAsymOff2Cut);
@@ -638,6 +657,12 @@ void initRunTree(TTree *run){
   run->Branch("numCycles", &numRunCycles, "numCycles/I");
   run->Branch("numCyclesAcc", &numRunCyclesAcc, "numCyclesAcc/I");
   run->Branch("runTime", &runTime);
+  run->Branch("year", &runYear, "year/I");
+  run->Branch("month", &runMonth, "month/I");
+  run->Branch("day", &runDay, "day/I");
+  run->Branch("hour", &runHour, "hour/I");
+  run->Branch("minute", &runMinute, "minute/I");
+  run->Branch("second", &runSecond, "second/I");
   for(Int_t i = 0; i < runMPSVars; i++){DataVar data; runMPSData.push_back(data);}
   for(Int_t i = 0; i < runMPSVars; i++){run->Branch(runMPSTitles[i].Data(), &runMPSData[i], "mean/F:meanErr/F:rms/F:rmsErr/F");}
   for(Int_t i = 0; i < runEpcVars; i++){StdVar data; runEpcData.push_back(data);}
@@ -645,6 +670,10 @@ void initRunTree(TTree *run){
   for(Int_t i = 0; i < runBPMVars; i++){PolVar data; runBPMData.push_back(data);}
   for(Int_t i = 0; i < runBPMVars; i++){run->Branch(runBPMTitles[i].Data(), &runBPMData[i], "mean/F:meanErr/F");}
   run->Branch("LaserPolarization", &runLaserPol, "mean/F:meanErr/F");
+  run->Branch("CollimatorOffset", &runCollOffset, "mean/F:meanErr/F");
+  run->Branch("AnalyzingPower", &runAnPow, "mean/F:meanErr/F");
+  run->Branch("xProj", &runXProj, "mean/F:meanErr/F");
+  run->Branch("yProj", &runYProj, "mean/F:meanErr/F");
   run->Branch("sign", &runSign, "sign/I");
   //run->Branch("Asym0", &runAsym0, "mean/F:meanErr/F:Chi2/F:NDF/I");
   //run->Branch("Asym0NGC", &runAsym0NGC, "mean/F:meanErr/F:Chi2/F:NDF/I");
@@ -720,7 +749,7 @@ void snailIterSet(Int_t base, Int_t snlInd, Int_t startRunNum){
   //snlAsym4Avg.clear(); snlAsym4Err.clear();
   //snlPol4Err.clear(); snlPol4Err.clear();
   qw1 = 0; hw1 = 0; qw2 = 0; ihwp = 0; HWienAngle = 0; VWienAngle = 0; PhiFG = 0;
-  readTimeFile(startRunNum);
+  readTimeFile(startRunNum, kTRUE);
 }
 
 void snailIterAfterSet(Int_t base, Int_t snlInd){
@@ -796,6 +825,7 @@ void runIterSet(Int_t runNumber, Int_t numCycles, TFile *plotFile){
   }
   runTime = 1.0*((TH1F *)plotFile->Get(Form("h%i_mps", runNumber)))->GetEntries()/helicityFreq(runNumber);
   snailTime += runTime;
+  readTimeFile(runNum, kFALSE);
   Float_t ihwpAvg = ((TH1F *)plotFile->Get(Form("h%i_%s", runNumber, "ihwp")))->GetMean();
   Int_t ihwpVar;
   if(ihwpAvg > 0.5) ihwpVar = 1;

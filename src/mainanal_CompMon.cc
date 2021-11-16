@@ -278,57 +278,59 @@ int main(int argc, char** argv)
     // 121  USER event used for CONFIGUATION info
     if(eventType<0) {
       printf("event %d eventcode %x", counter, eventType);
-    } else if(eventType==1) {
+    } 
+    else if(eventType==1) {
       pROCdata=codaData->getROCdata(fadcROCnum,0); //assume any ROC is THE ROC for now
       if(pROCdata!=NULL){
-	theFADCdata->newMPS();     //clear counters, ,etc.
-	status=theFADCdata->UnpackAllSubbanks(codaData,theVMEauxdata);
-	//	theVMEauxdata->DebugDump(0);
-	int codaEventNumber=codaData->GetEventNumber();
-	//
-	// finished upacking raw data,  now start analysis 
-	// determine laserState, helicity, beamON, etc. with theComptonStatus
-	//
-	laserTransition=theComptonStatus->newMPS(codaEventNumber,
+	      theFADCdata->newMPS();     //clear counters, ,etc.
+	      status=theFADCdata->UnpackAllSubbanks(codaData,theVMEauxdata);
+	      //	theVMEauxdata->DebugDump(0);
+	      int codaEventNumber=codaData->GetEventNumber();
+	      //
+	      // finished upacking raw data,  now start analysis 
+	      // determine laserState, helicity, beamON, etc. with theComptonStatus
+	      //
+	      laserTransition=theComptonStatus->newMPS(codaEventNumber,
 						 theFADCdata,theVMEauxdata);
-	//ComptonStatus DebugDump	
-	// mode =1  dump line every helicity window
-	// mode =2  dump transitions only
-	theComptonStatus->DebugDump(-1);	 //dump some status info
-	//
-	// DUMP a few events for checking scalers and bits
-	if(codaEventNumber>=100 && codaEventNumber<=105){
-	  printf("Dump Scalers codaEvent=%d    ",codaEventNumber);
-	  theVMEauxdata->DebugDump(0);  //dump TIR, scalers, etc.
-	}
-	if(laserTransition){
-	  status=theAccums->DoLaserTransition(0); //do completed laser state
-	  //(also call this at end of run)
-	}
+	      //ComptonStatus DebugDump	
+	      // mode =1  dump line every helicity window
+	      // mode =2  dump transitions only
+	      theComptonStatus->DebugDump(-1);	 //dump some status info
+	      //
+	      // DUMP a few events for checking scalers and bits
+	      if(codaEventNumber>=100 && codaEventNumber<=105){
+	        printf("Dump Scalers codaEvent=%d    ",codaEventNumber);
+	        theVMEauxdata->DebugDump(0);  //dump TIR, scalers, etc.
+	      }
+	      if(laserTransition){
+	        status=theAccums->DoLaserTransition(0); //do completed laser state
+	        //(also call this at end of run)
+	      }
       	//if(theFADCdata->IsSumsValid(calorimeterChan)){   //trigged sums
-	  status=theTriggered->DoSummedPulses(theVMEauxdata,theFADCdata);
-	  //}
-	if(theFADCdata->IsSamplesValid(calorimeterChan)){   //waveform samples
-	  status=theTriggered->DoSampledWaveforms(theFADCdata);
-	}
-	if(theFADCdata->IsAccumValid(calorimeterChan)){  //FADC accumulator data
-	  status=theAccums->DoAccums(theVMEauxdata,theFADCdata);
-	  //status=theAccums->BuildQuad();
-	  // Where a multiplet can be anything (pair, quad, octet, etc...)
-	  status=theAccums->BuildMultiplet();
-	  accumulatorCounter++;
-	}
-	
+	      status=theTriggered->DoSummedPulses(theVMEauxdata,theFADCdata);
+	      //}
+	      if(theFADCdata->IsSamplesValid(calorimeterChan)){   //waveform samples
+	        status=theTriggered->DoSampledWaveforms(theFADCdata);
+	      }
+	      if(theFADCdata->IsAccumValid(calorimeterChan)){  //FADC accumulator data
+	        status=theAccums->DoAccums(theVMEauxdata,theFADCdata);
+	        //status=theAccums->BuildQuad();
+	        // Where a multiplet can be anything (pair, quad, octet, etc...)
+	        status=theAccums->BuildMultiplet();
+	        accumulatorCounter++;
+	      }
       }
-    } else if(eventType==131){  //EPICS
+    } 
+    else if(eventType==131){  //EPICS
       epicsCounter++;
       //      theEPICSdata->Unpack(epicsHandler,codaData->getEvBuffer());
       theComptonStatus->UnpackEpics(epicsHandler,codaData->getEvBuffer());
       if(epicsCounter%1000==5) {
-	printf("EPICS Event %d\n", epicsCounter);
-	theComptonStatus->EpicsDebugDump();
+	      printf("EPICS Event %d\n", epicsCounter);
+	      theComptonStatus->EpicsDebugDump();
       }
-    } else if(eventType==121){
+    } 
+    else if(eventType==121){
       printf("CONFIG event encountered\n");
       usereventCounter++;
       uint32_t *buffp=codaData->getEvBuffer();
@@ -375,17 +377,19 @@ int main(int argc, char** argv)
                 "DISABLED" ));
             theFADCdata->SetMMEnabled(buffp[j] & 0xFFFF);
           }
-        } else {
+        } 
+        else {
           theFADCdata->SetMMEnabled(2); // Set it to two so it won't break compatibility with old data
         }
         printf("\n");
       }
-    } else if(eventType==17){
-    } else if(eventType==18){
-    } else if(eventType==20){
-    }else{
-	printf(" Unrecognized eventType=%d\n",eventType);
-      }
+    } 
+    else if(eventType==17){} 
+    else if(eventType==18){} 
+    else if(eventType==20){}
+    else{
+	    printf(" Unrecognized eventType=%d\n",eventType);
+    }
     if(counter%1000==0){
       status=theTriggered->DoNormalizedHistos();
     }

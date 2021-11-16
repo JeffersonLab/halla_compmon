@@ -72,22 +72,22 @@ void fitSnailPol(Int_t prexOrCrex){
   snl->SetBranchAddress("sign", &sign);
   snl->SetBranchAddress("ihwp", &ihwp);
 
-  const Int_t nFitRanges = 3;
-  // Int_t rangeStarts[nFitRanges] = {101, 122, 138, 177};
-  // Int_t rangeEnds[nFitRanges] = {121, 137, 174, 219};
-  Int_t rangeStarts[nFitRanges] = {101, 138, 177};
-  Int_t rangeEnds[nFitRanges] = {137, 174, 219};
+  const Int_t nFitRanges = 4;
+  Int_t rangeStarts[nFitRanges] = {101, 122, 138, 177};
+  Int_t rangeEnds[nFitRanges] = {121, 137, 174, 221};
+  // Int_t rangeStarts[nFitRanges] = {101, 138, 177};
+  // Int_t rangeEnds[nFitRanges] = {137, 174, 219};
   TF1 *fitsOUT[nFitRanges];
   TF1 *fitsIN[nFitRanges];
   TPaveText *texts[nFitRanges];
-  // Float_t xLo[nFitRanges] = {0.11, 0.25, 0.45, 0.75};
-  // Float_t yLo[nFitRanges] = {0.75, 0.20, 0.60, 0.70};
-  // Float_t xHi[nFitRanges] = {0.21, 0.35, 0.55, 0.85};
-  // Float_t yHi[nFitRanges] = {0.65, 0.30, 0.70, 0.80};
-  Float_t xLo[nFitRanges] = {0.25, 0.45, 0.75};
-  Float_t yLo[nFitRanges] = {0.20, 0.60, 0.70};
-  Float_t xHi[nFitRanges] = {0.35, 0.55, 0.85};
-  Float_t yHi[nFitRanges] = {0.30, 0.70, 0.80};
+  Float_t xLo[nFitRanges] = {0.11, 0.25, 0.45, 0.75};
+  Float_t yLo[nFitRanges] = {0.75, 0.20, 0.60, 0.70};
+  Float_t xHi[nFitRanges] = {0.21, 0.35, 0.55, 0.85};
+  Float_t yHi[nFitRanges] = {0.65, 0.30, 0.70, 0.80};
+  // Float_t xLo[nFitRanges] = {0.25, 0.45, 0.75};
+  // Float_t yLo[nFitRanges] = {0.20, 0.60, 0.70};
+  // Float_t xHi[nFitRanges] = {0.35, 0.55, 0.85};
+  // Float_t yHi[nFitRanges] = {0.30, 0.70, 0.80};
 
   TGraphErrors *gOUT[nFitRanges];
   TGraphErrors *gIN[nFitRanges];
@@ -101,8 +101,7 @@ void fitSnailPol(Int_t prexOrCrex){
     gIN[i] = new TGraphErrors();
     gIN[i]->SetMarkerStyle(getMarkerStyle(1, i));
     gIN[i]->SetMarkerColor(getColor(1, i));
-    TString fitStyle = (i == 1) ? "pol1" : "pol0";
-    if(i == 0) fitStyle = "pol2";
+    TString fitStyle = (i == 1 || i == 2) ? "pol1" : "pol0";
 
     fitsOUT[i] = new TF1(Form("fit%i-%i_OUT", rangeStarts[i], rangeEnds[i]), fitStyle.Data());
     fitsOUT[i]->SetLineColor(getColor(0, i));
@@ -117,7 +116,8 @@ void fitSnailPol(Int_t prexOrCrex){
 
   for(Int_t i = 0; i < snl->GetEntries(); i++){
     snl->GetEntry(i);
-    if(sign == 0 || snlNum == 150 || snlNum == 151 || snlNum == 159 || snlNum == 160 || snlNum == 220 || snlNum == 221) continue;
+    //if(sign == 0 || snlNum == 150 || snlNum == 151 || snlNum == 159 || snlNum == 160 || snlNum == 220 || snlNum == 221) continue;
+    if(sign == 0) continue;
     Int_t rng = 0;
     for(Int_t j = 0; j < nFitRanges; j++){
       if(snlNum >= rangeStarts[j] && snlNum <= rangeEnds[j])
@@ -155,7 +155,7 @@ void fitSnailPol(Int_t prexOrCrex){
     ((TText*)texts[i]->GetListOfLines()->Last())->SetTextColor(getColor(1, i));
     printf("Range %i OUT: %.4f +/- %.4f\n", i+1, fitsOUT[i]->GetParameter(0), fitsOUT[i]->GetParError(0));
     printf("Range %i IN: %.4f +/- %.4f\n", i+1, fitsIN[i]->GetParameter(0), fitsIN[i]->GetParError(0));
-    if(i == 1){
+    if(i == 1 || i == 2){
       printf("Range %i OUT: %.4f +/- %.4f\n", i+1, fitsOUT[i]->GetParameter(1), fitsOUT[i]->GetParError(1));
       printf("Range %i IN: %.4f +/- %.4f\n", i+1, fitsIN[i]->GetParameter(1), fitsIN[i]->GetParError(1));
     }
