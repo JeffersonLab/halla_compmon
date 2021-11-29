@@ -34,7 +34,27 @@ vector<vector<int>> completeCycleList(int runNum){
 }
 **/
 
-void plotAllCycles(int runNum){
+
+Bool_t acceptCycle(Int_t rNum, Int_t cNum){
+  TString expt = (rNum < 4800) ? "prex" : "crex";
+  TFile *grand = TFile::Open(Form("%s/aggregates/%sGrandCompton.root", getenv("COMPMON_WEB"), expt.Data()), "r");
+  if(!grand->IsOpen()){
+    printf("Grand rootfile not found. Defaulting to no CycleCut.\n");
+    return kTRUE;
+  }
+
+  TTree *cyc = (TTree *)grand->Get("cyc");
+
+  TString hCycName = Form("cycTree_run%i_cyc%i", rNum, cNum);
+  cyc->Draw(Form("CycleCut>>%s", hCycName.Data()), Form("runNum==%i && cycleNum==%i", rNum, cNum), "goff");
+  TH1F *hCyc = (TH1F *)gDirectory->Get(hCycName.Data());
+  return hCyc->GetMean() == 0;
+}
+
+
+void plotAllCycles(int runNum, Int_t applyCycleCut=0){
+  TString cutAdd = (applyCycleCut) ? "_Cut" : "";
+
   vector<vector<int>> allCycles = getCycleList(runNum);
   //TFile *f = new TFile(Form("%s/compmon_%i.root", getenv("COMP_ROOTFILES"), runNum), "READ");
   //TTree *mpswise = (TTree *)f->Get("mpswise");
@@ -47,6 +67,10 @@ void plotAllCycles(int runNum){
   Float_t sumOnMean = 0; Float_t sumOffMean = 0;
   for(int i = 0; i < allCycles.size(); i++){
     vector<int> cycle = allCycles[i];
+    if(applyCycleCut && !acceptCycle(runNum, i + 1)){
+      printf("Skipping cycle %i because it was cut\n", i + 1);
+      continue;
+    }
     printf("Cycle %i Limits: %i, %i, %i, %i, %i, %i\n", i + 1, cycle[0], cycle[1], cycle[2], cycle[3], cycle[4], cycle[5]);
     TCanvas *currentCan = new TCanvas(Form("cycle_%i_pad", i), Form("Run %i, Laser Cycle %i", runNum, i + 1), 1200, 800);
     currentCan->Divide(2, 2);
@@ -122,7 +146,7 @@ void plotAllCycles(int runNum){
     }
     currentCan->cd(4);
     mpswise->Draw("Acc0/NAcc0:mpsCoda", Form("mpsCoda>=%i && mpsCoda<=%i && beamState==1", cycle[0], cycle[5]));
-    currentCan->Print(Form("%s/runs/Run%i/cycle_%03i_plots.png", getenv("COMPMON_WEB"), runNum, i + 1), "png");
+    currentCan->Print(Form("%s/runs/Run%i/cycle_%03i_plots1%s.png", getenv("COMPMON_WEB"), runNum, i + 1, cutAdd.Data()), "png");
     
     TCanvas *graphCan = new TCanvas(Form("graph_cycle%i_pad", i), "Graphs Canvas", 1200, 800);
     graphCan->Divide(2, 2);
@@ -131,9 +155,10 @@ void plotAllCycles(int runNum){
     graphCan->cd(2); mpswise->Draw("beamState + 1:mpsCoda", cycCut.Data());
     graphCan->cd(3); mpswise->Draw("cavPowerCalibrated:mpsCoda", cycCut.Data());
     graphCan->cd(4); mpswise->Draw("bcm:mpsCoda", cycCut.Data());
-    graphCan->Print(Form("%s/runs/Run%i/cycle_%03i.png", getenv("COMPMON_WEB"), runNum, i + 1), "png");
+    graphCan->Print(Form("%s/runs/Run%i/cycle_%03i_plots2%s.png", getenv("COMPMON_WEB"), runNum, i + 1, cutAdd.Data()), "png");
   }
   
-  gSystem->Exec(Form("convert %s/runs/Run%i/cycle_*.png %s/runs/Run%i/cycle_qVars.pdf", getenv("COMPMON_WEB"), runNum, getenv("COMPMON_WEB"), runNum));
+  gSystem->Exec(Form("convert %s/runs/Run%i/cycle_*.png %s/runs/Run%i/cycle_qVars%s.pdf", getenv("COMPMON_WEB"), runNum, getenv("COMPMON_WEB"), runNum, cutAdd.Data()));
+
   gSystem->Exec(Form("rm -rf %s/runs/Run%i/*.png", getenv("COMPMON_WEB"), runNum));
 }
